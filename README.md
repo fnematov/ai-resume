@@ -70,11 +70,27 @@ Then put a reverse proxy (nginx / Caddy / Traefik) with your domain + HTTPS in f
 `FRONTEND_PORT`. The panel's nginx proxies `/api` to the backend, so the admin panel **and**
 the Telegram/Calendly webhooks both work through that one domain — set `PUBLIC_BASE_URL` to it.
 
-| Port | Default | Purpose |
-|------|---------|---------|
-| `FRONTEND_PORT` | 8090 | Admin panel (public entry — reverse-proxy this) |
-| `API_PORT` | 8010 | Direct API access (optional; nginx already proxies `/api`) |
-| Postgres / Redis | — | Internal only, never exposed |
+**Only ONE host port is bound in production** (the admin panel) — everything else lives on
+the internal docker network. This is conflict-free with an existing host Postgres / Redis /
+nginx:
+
+| Service | Host port | Note |
+|---------|-----------|------|
+| frontend (nginx) | `${FRONTEND_PORT}` (default **8090**) | The single public port. Your host nginx reverse-proxies your domain here. Never 80/443. |
+| api | — | Internal only; reached via the frontend nginx `/api` proxy. (To expose it directly, add `ports` to the api service.) |
+| Postgres | — | Internal only. The container's Postgres is on the docker network and **does not touch your host's 5432**. |
+| Redis | — | Internal only. |
+
+Example host-nginx server block:
+
+```nginx
+server {
+    server_name hire.yourcompany.com;
+    client_max_body_size 20m;
+    location / { proxy_pass http://127.0.0.1:8090; proxy_set_header Host $host; }
+    # add your certbot/TLS config
+}
+```
 
 > Keep `ENCRYPTION_KEY` stable for a deployment — it decrypts stored bot tokens and AI keys.
 
