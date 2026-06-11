@@ -55,6 +55,8 @@ class ApplicationDetail(ApplicationListItem):
     extracted_text: str | None = None
     file_mime: str | None = None
     decision_reason: str | None = None
+    cover_letter_text: str | None = None
+    cover_letter_filename: str | None = None
 
 
 class StageUpdate(BaseModel):

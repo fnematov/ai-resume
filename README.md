@@ -113,7 +113,8 @@ When an org saves its bot token (Settings page), the API calls `setWebhook` auto
 3. Sign in as the **org admin** → **Settings**: connect a Telegram bot (token from @BotFather)
    and an AI provider + API key.
 4. **Vacancies** → create an "open" role → copy its `t.me/<bot>?start=job_<id>` link.
-5. A candidate opens the link in Telegram and uploads a resume → the bot replies "Received ✅".
+5. A candidate opens the link in Telegram and uploads a resume → the bot offers to add an
+   optional **cover letter** (text or file); it's folded into the AI analysis.
 6. The application appears under the vacancy, transitions `pending → scored`, and shows the
    match % and reasons. The table sorts highest-match first.
 
@@ -128,6 +129,8 @@ Beyond ranking, the platform runs the full hiring workflow:
 - **One-click actions** on the application page — Send test task / Invite to interview /
   Send offer / Reject. Each renders a per-org **message template** (`{{candidate_name}}`,
   `{{job_title}}`, `{{company}}`, `{{scheduling_link}}`…) and delivers it via the Telegram bot.
+- **Cover letters** — after uploading a resume the candidate can optionally add a cover letter
+  (text or file); it's included in the AI score and shown on the application page.
 - **Two-way chat** — candidate replies appear as a conversation thread; the recruiter can reply.
 - **AI-graded test tasks** — the candidate's submitted file is scored against the task by the
   same AI engine; the grade shows on the application page.

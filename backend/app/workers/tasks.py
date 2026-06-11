@@ -63,6 +63,18 @@ async def _run_score(SessionLocal, application_id: int) -> None:
             if document.text and not app_row.extracted_text:
                 app_row.extracted_text = document.text[:200_000]
 
+            # Fold in the cover letter (text or file) so the AI factors it into the score.
+            cover_text = app_row.cover_letter_text
+            if not cover_text and app_row.cover_letter_file_path:
+                cl_data = read_resume(app_row.cover_letter_file_path)
+                cover_doc = normalize_document(
+                    cl_data, app_row.cover_letter_filename, app_row.cover_letter_mime
+                )
+                cover_text = cover_doc.text
+            if cover_text:
+                prefix = (document.text + "\n\n") if document.text else ""
+                document.text = f"{prefix}=== COVER LETTER ===\n{cover_text.strip()}"
+
             api_key = decrypt_secret(org.ai_api_key_enc)  # type: ignore[arg-type]
             provider = get_provider(org.ai_provider, api_key, org.ai_model)  # type: ignore[arg-type]
             job = JobSpec(

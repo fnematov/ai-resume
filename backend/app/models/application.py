@@ -39,6 +39,12 @@ class Application(Base, TimestampMixin):
     file_mime: Mapped[str | None] = mapped_column(String(120), nullable=True)
     extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Optional cover letter (text typed in chat, or an uploaded file). Included in AI scoring.
+    cover_letter_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_letter_file_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    cover_letter_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    cover_letter_mime: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
     status: Mapped[ApplicationStatus] = mapped_column(
         SAEnum(ApplicationStatus, name="application_status"),
         default=ApplicationStatus.pending,

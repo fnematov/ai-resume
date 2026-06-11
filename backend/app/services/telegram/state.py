@@ -49,3 +49,24 @@ async def get_awaiting_submission(org_id: int, chat_id: int) -> int | None:
 
 async def clear_awaiting_submission(org_id: int, chat_id: int) -> None:
     await _client().delete(_sub_key(org_id, chat_id))
+
+
+# --- Awaiting cover letter (text or file) ---
+_CL_TTL = 60 * 30  # 30 minutes to add a cover letter after applying
+
+
+def _cl_key(org_id: int, chat_id: int) -> str:
+    return f"tg:cl:{org_id}:{chat_id}"
+
+
+async def set_awaiting_cover_letter(org_id: int, chat_id: int, application_id: int) -> None:
+    await _client().set(_cl_key(org_id, chat_id), str(application_id), ex=_CL_TTL)
+
+
+async def get_awaiting_cover_letter(org_id: int, chat_id: int) -> int | None:
+    val = await _client().get(_cl_key(org_id, chat_id))
+    return int(val) if val else None
+
+
+async def clear_awaiting_cover_letter(org_id: int, chat_id: int) -> None:
+    await _client().delete(_cl_key(org_id, chat_id))

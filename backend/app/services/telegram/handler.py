@@ -27,10 +27,13 @@ from app.services.extraction import ALLOWED_EXTENSIONS, guess_mime
 from app.services.storage import save_resume
 from app.services.telegram.client import TelegramClient
 from app.services.telegram.state import (
+    clear_awaiting_cover_letter,
     clear_awaiting_submission,
     clear_selected_vacancy,
+    get_awaiting_cover_letter,
     get_awaiting_submission,
     get_selected_vacancy,
+    set_awaiting_cover_letter,
     set_selected_vacancy,
 )
 
@@ -112,12 +115,38 @@ async def handle_update(
     token = decrypt_secret(org.telegram_bot_token_enc)  # type: ignore[arg-type]
     client = TelegramClient(token)
 
-    # --- Callback (vacancy picked from inline keyboard) ---
+    # --- Callback (inline keyboards) ---
     if "callback_query" in update:
         cq = update["callback_query"]
         chat_id = cq["message"]["chat"]["id"]
         data = cq.get("data", "")
         await client.answer_callback_query(cq["id"])
+
+        # Cover-letter decision after a resume upload.
+        if data.startswith("cover_skip_"):
+            try:
+                app_id = int(data.rsplit("_", 1)[1])
+            except (ValueError, IndexError):
+                return
+            await clear_awaiting_cover_letter(org.id, chat_id)
+            enqueue_score(app_id)
+            await client.send_message(
+                chat_id, "✅ Thanks! Your application is being reviewed. Good luck! 🍀"
+            )
+            return
+        if data.startswith("cover_add_"):
+            try:
+                app_id = int(data.rsplit("_", 1)[1])
+            except (ValueError, IndexError):
+                return
+            await set_awaiting_cover_letter(org.id, chat_id, app_id)
+            await client.send_message(
+                chat_id,
+                "✍️ Please send your cover letter now — as a text message or a file. "
+                "It will be considered together with your resume.",
+            )
+            return
+
         vacancy = await _vacancy_by_param(db, org.id, data)
         if vacancy:
             await set_selected_vacancy(org.id, chat_id, vacancy.id)
@@ -189,6 +218,31 @@ async def handle_update(
         file_id = message["photo"][-1]["file_id"]
         filename = "resume.jpg"
         mime = "image/jpeg"
+
+    # --- Cover letter capture (candidate chose to add one after applying) ---
+    cl_app_id = await get_awaiting_cover_letter(org.id, chat_id)
+    if cl_app_id is not None:
+        if not file_id and not text:
+            await client.send_message(chat_id, "Please send your cover letter as text or a file.")
+            return
+        app_row = await db.get(Application, cl_app_id)
+        if app_row is not None:
+            if file_id:
+                tg_file = await client.get_file(file_id)
+                data = await client.download_file(tg_file["file_path"])
+                key = save_resume(org.id, data, filename)
+                app_row.cover_letter_file_path = key
+                app_row.cover_letter_filename = filename
+                app_row.cover_letter_mime = guess_mime(filename, mime)
+            else:
+                app_row.cover_letter_text = text[:20000]
+            await db.commit()
+            enqueue_score(cl_app_id)
+        await clear_awaiting_cover_letter(org.id, chat_id)
+        await client.send_message(
+            chat_id, "✅ Cover letter added — thank you! Your application is being reviewed. 🍀"
+        )
+        return
 
     if file_id:
         # --- Test-task submission (candidate is in the test_task stage) ---
@@ -273,13 +327,28 @@ async def handle_update(
         db.add(app_row)
         await db.flush()
         await db.commit()
-        enqueue_score(app_row.id)
         await clear_selected_vacancy(org.id, chat_id)
-        notice = "✅ Received! Thanks — your application has been submitted."
+
+        # Offer to add a cover letter before scoring (it's factored into the AI analysis).
+        notice = "✅ Resume received!"
         if org.privacy_notice:
             notice += f"\n\n{org.privacy_notice}"
-        notice += "\n\nℹ️ Send /forget anytime to delete your data."
-        await client.send_message(chat_id, notice)
+        notice += (
+            "\n\nWould you like to add a <b>cover letter</b>? It's considered in the AI review "
+            "and can strengthen your application."
+        )
+        await client.send_message(
+            chat_id,
+            notice,
+            reply_markup={
+                "inline_keyboard": [
+                    [
+                        {"text": "✍️ Add cover letter", "callback_data": f"cover_add_{app_row.id}"},
+                        {"text": "Skip", "callback_data": f"cover_skip_{app_row.id}"},
+                    ]
+                ]
+            },
+        )
         return
 
     # --- Free-text from a known candidate => inbound message (two-way chat) ---

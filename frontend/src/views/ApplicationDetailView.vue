@@ -115,6 +115,22 @@ const ACTIONS = [
       </CardContent>
     </Card>
 
+    <!-- Cover letter -->
+    <Card v-if="app.cover_letter_text || app.cover_letter_filename">
+      <CardHeader class="pb-2">
+        <CardTitle class="flex items-center gap-2 text-base">
+          Cover letter
+          <a v-if="app.cover_letter_filename" :href="applicationApi.coverLetterUrl(id)" target="_blank">
+            <Button variant="outline" size="sm"><Download class="h-4 w-4" /> {{ app.cover_letter_filename }}</Button>
+          </a>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p v-if="app.cover_letter_text" class="whitespace-pre-wrap text-sm leading-relaxed">{{ app.cover_letter_text }}</p>
+        <p v-else class="text-sm text-muted-foreground">Sent as a file — download above. Included in the AI review.</p>
+      </CardContent>
+    </Card>
+
     <!-- Interview -->
     <Card v-if="interviews?.length">
       <CardHeader class="pb-2"><CardTitle class="text-base">Interview</CardTitle></CardHeader>

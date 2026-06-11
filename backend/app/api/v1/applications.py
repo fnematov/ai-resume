@@ -137,6 +137,24 @@ async def download_resume(
     )
 
 
+@router.get("/{application_id}/cover-letter")
+async def download_cover_letter(
+    application_id: int,
+    user: User = Depends(get_org_user),
+    db: AsyncSession = Depends(get_db),
+):
+    app_row = await _get_owned(application_id, user, db)
+    if not app_row.cover_letter_file_path or not resume_exists(app_row.cover_letter_file_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No cover letter file")
+    data = read_resume(app_row.cover_letter_file_path)
+    filename = app_row.cover_letter_filename or "cover-letter"
+    return Response(
+        content=data,
+        media_type=app_row.cover_letter_mime or "application/octet-stream",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 @router.post("/{application_id}/rescore", response_model=ApplicationDetail)
 async def rescore_application(
     application_id: int,

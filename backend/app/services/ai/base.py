@@ -112,9 +112,12 @@ SCORE_JSON_SCHEMA: dict = {
 
 def build_system_prompt(job: JobSpec) -> str:
     parts = [
-        "You are an expert technical recruiter screening resumes for a specific job.",
-        "Evaluate the candidate's resume STRICTLY against the job below.",
-        "Be objective and evidence-based: base the score only on what the resume shows.",
+        "You are an expert technical recruiter screening candidates for a specific job.",
+        "Evaluate the candidate's application (resume, and a cover letter if one is provided) "
+        "STRICTLY against the job below.",
+        "Be objective and evidence-based: base the score only on what the materials show. "
+        "A strong, relevant cover letter can raise the score; a generic or missing one should not "
+        "by itself lower it below what the resume warrants.",
         "If a required skill is absent, list it in missing_skills and lower the score accordingly.",
         "",
         f"# Job title\n{job.title}",

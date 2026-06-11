@@ -149,6 +149,9 @@ export const applicationApi = {
   resumeUrl(id: number) {
     return `${api.defaults.baseURL}/applications/${id}/resume`
   },
+  coverLetterUrl(id: number) {
+    return `${api.defaults.baseURL}/applications/${id}/cover-letter`
+  },
   async upload(vacancyId: number, file: File) {
     const form = new FormData()
     form.append("file", file)

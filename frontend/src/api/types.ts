@@ -203,6 +203,8 @@ export interface ApplicationDetail extends ApplicationListItem {
   extracted_text: string | null
   file_mime: string | null
   decision_reason: string | null
+  cover_letter_text: string | null
+  cover_letter_filename: string | null
 }
 
 export interface VacancyStat {
