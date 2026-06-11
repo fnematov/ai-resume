@@ -1,0 +1,32 @@
+# Copy to `docker-compose.override.yml` to enable local development:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+# It mounts the source for hot-reload and exposes db/redis on the host.
+# For the usual local ports, set FRONTEND_PORT=5173 and API_PORT=8000 in .env.
+services:
+  db:
+    ports:
+      - "5434:5432"
+
+  redis:
+    ports:
+      - "6380:6379"
+
+  api:
+    entrypoint: []
+    command:
+      - sh
+      - -c
+      - "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/app
+      - storage:/data/storage
+
+  worker:
+    entrypoint: []
+    command:
+      - sh
+      - -c
+      - "celery -A app.workers.celery_app.celery_app worker --beat --loglevel=info --concurrency=4"
+    volumes:
+      - ./backend:/app
+      - storage:/data/storage

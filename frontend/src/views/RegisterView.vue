@@ -1,0 +1,73 @@
+<script setup lang="ts">
+import { ref } from "vue"
+import { useRouter } from "vue-router"
+
+import { apiError } from "@/api/client"
+import { authApi } from "@/api/endpoints"
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Spinner } from "@/components/ui"
+
+const router = useRouter()
+const form = ref({ organization_name: "", full_name: "", email: "", password: "" })
+const error = ref("")
+const loading = ref(false)
+const done = ref(false)
+
+async function submit() {
+  error.value = ""
+  loading.value = true
+  try {
+    await authApi.register(form.value)
+    done.value = true
+  } catch (e) {
+    error.value = apiError(e)
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen grid place-items-center bg-muted/40 p-4">
+    <Card class="w-full max-w-md">
+      <CardHeader>
+        <CardTitle class="text-2xl">Register your organization</CardTitle>
+        <CardDescription>
+          Create an account. A platform admin will review and approve your organization before you can post jobs.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div v-if="done" class="space-y-4 text-center">
+          <p class="text-sm">
+            🎉 Thanks! Your organization <b>{{ form.organization_name }}</b> was submitted and is
+            <b>awaiting approval</b>. You can sign in now, but job features unlock once approved.
+          </p>
+          <Button class="w-full" @click="router.push({ name: 'login' })">Go to sign in</Button>
+        </div>
+        <form v-else class="space-y-4" @submit.prevent="submit">
+          <div class="space-y-2">
+            <Label>Organization name</Label>
+            <Input v-model="form.organization_name" placeholder="Acme Corp" />
+          </div>
+          <div class="space-y-2">
+            <Label>Your name</Label>
+            <Input v-model="form.full_name" placeholder="Jane Boss" />
+          </div>
+          <div class="space-y-2">
+            <Label>Email</Label>
+            <Input v-model="form.email" type="email" placeholder="you@company.com" />
+          </div>
+          <div class="space-y-2">
+            <Label>Password</Label>
+            <Input v-model="form.password" type="password" placeholder="At least 8 characters" />
+          </div>
+          <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
+          <Button type="submit" class="w-full" :disabled="loading"><Spinner v-if="loading" /> Create account</Button>
+        </form>
+        <p v-if="!done" class="mt-4 text-center text-sm text-muted-foreground">
+          Already have an account?
+          <RouterLink to="/login" class="text-primary underline-offset-4 hover:underline">Sign in</RouterLink>
+        </p>
+      </CardContent>
+    </Card>
+  </div>
+</template>
