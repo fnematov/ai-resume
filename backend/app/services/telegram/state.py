@@ -70,3 +70,39 @@ async def get_awaiting_cover_letter(org_id: int, chat_id: int) -> int | None:
 
 async def clear_awaiting_cover_letter(org_id: int, chat_id: int) -> None:
     await _client().delete(_cl_key(org_id, chat_id))
+
+
+# --- Candidate language preference ---
+_LANG_TTL = 60 * 60 * 24 * 30  # 30 days
+
+
+def _lang_key(org_id: int, chat_id: int) -> str:
+    return f"tg:lang:{org_id}:{chat_id}"
+
+
+async def set_language(org_id: int, chat_id: int, lang: str) -> None:
+    await _client().set(_lang_key(org_id, chat_id), lang, ex=_LANG_TTL)
+
+
+async def get_language(org_id: int, chat_id: int) -> str | None:
+    return await _client().get(_lang_key(org_id, chat_id))
+
+
+# --- Pending /start deep-link param (preserved across language selection) ---
+_START_TTL = 60 * 10
+
+
+def _start_key(org_id: int, chat_id: int) -> str:
+    return f"tg:start:{org_id}:{chat_id}"
+
+
+async def set_pending_start(org_id: int, chat_id: int, param: str) -> None:
+    await _client().set(_start_key(org_id, chat_id), param, ex=_START_TTL)
+
+
+async def get_pending_start(org_id: int, chat_id: int) -> str | None:
+    return await _client().get(_start_key(org_id, chat_id))
+
+
+async def clear_pending_start(org_id: int, chat_id: int) -> None:
+    await _client().delete(_start_key(org_id, chat_id))

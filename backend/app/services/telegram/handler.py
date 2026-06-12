@@ -26,21 +26,45 @@ from app.services.activities import log_activity
 from app.services.extraction import ALLOWED_EXTENSIONS, guess_mime
 from app.services.storage import save_resume
 from app.services.telegram.client import TelegramClient
+from app.services.telegram.i18n import (
+    CHOOSE_LANGUAGE,
+    DEFAULT_LANG,
+    SUPPORTED_LANGS,
+    language_keyboard,
+    t,
+)
 from app.services.telegram.state import (
     clear_awaiting_cover_letter,
     clear_awaiting_submission,
+    clear_pending_start,
     clear_selected_vacancy,
     get_awaiting_cover_letter,
     get_awaiting_submission,
+    get_language,
+    get_pending_start,
     get_selected_vacancy,
     set_awaiting_cover_letter,
+    set_language,
+    set_pending_start,
     set_selected_vacancy,
 )
 
-WELCOME = (
-    "👋 Welcome! Send your resume here (PDF, image, or Word document) "
-    "and we'll match it against the role."
-)
+async def _resolve_lang(db: AsyncSession, org_id: int, chat_id: int, tg_user: dict) -> str:
+    """Current candidate language: Redis first, then the persisted candidate, else default."""
+    lang = await get_language(org_id, chat_id)
+    if lang in SUPPORTED_LANGS:
+        return lang
+    cand = (
+        await db.execute(
+            select(Candidate).where(
+                Candidate.org_id == org_id,
+                Candidate.telegram_user_id == tg_user.get("id"),
+            )
+        )
+    ).scalar_one_or_none()
+    if cand and cand.language in SUPPORTED_LANGS:
+        return cand.language
+    return DEFAULT_LANG
 
 
 async def _open_vacancies(db: AsyncSession, org_id: int) -> list[Vacancy]:
@@ -70,14 +94,38 @@ def _vacancy_keyboard(vacancies: list[Vacancy]) -> dict:
     }
 
 
-async def _prompt_for_vacancy(client: TelegramClient, chat_id: int, vacancy: Vacancy) -> None:
+async def _prompt_for_vacancy(
+    client: TelegramClient, chat_id: int, vacancy: Vacancy, lang: str
+) -> None:
     await client.send_message(
         chat_id,
-        f"You're applying for <b>{vacancy.title}</b>.\n\n{WELCOME}",
+        f"{t(lang, 'applying_for', title=vacancy.title)}\n\n{t(lang, 'welcome')}",
     )
 
 
-async def _upsert_candidate(db: AsyncSession, org_id: int, tg_user: dict) -> Candidate:
+async def _start_flow(
+    client: TelegramClient, db: AsyncSession, org: Organization, chat_id: int, lang: str, param: str
+) -> None:
+    """After language is chosen: open the deep-linked vacancy or list open vacancies."""
+    if param:
+        vacancy = await _vacancy_by_param(db, org.id, param)
+        if vacancy:
+            await set_selected_vacancy(org.id, chat_id, vacancy.id)
+            await _prompt_for_vacancy(client, chat_id, vacancy, lang)
+            return
+        await client.send_message(chat_id, t(lang, "position_closed"))
+    vacancies = await _open_vacancies(db, org.id)
+    if not vacancies:
+        await client.send_message(chat_id, t(lang, "no_open_positions"))
+    else:
+        await client.send_message(
+            chat_id, t(lang, "choose_position"), reply_markup=_vacancy_keyboard(vacancies)
+        )
+
+
+async def _upsert_candidate(
+    db: AsyncSession, org_id: int, tg_user: dict, lang: str | None = None
+) -> Candidate:
     tg_id = tg_user.get("id")
     cand = (
         await db.execute(
@@ -95,12 +143,15 @@ async def _upsert_candidate(db: AsyncSession, org_id: int, tg_user: dict) -> Can
             telegram_user_id=tg_id,
             telegram_username=tg_user.get("username"),
             full_name=full_name,
+            language=lang,
         )
         db.add(cand)
         await db.flush()
     else:
         cand.telegram_username = tg_user.get("username") or cand.telegram_username
         cand.full_name = full_name or cand.full_name
+        if lang:
+            cand.language = lang
     return cand
 
 
@@ -119,8 +170,33 @@ async def handle_update(
     if "callback_query" in update:
         cq = update["callback_query"]
         chat_id = cq["message"]["chat"]["id"]
+        cq_user = cq.get("from", {})
         data = cq.get("data", "")
         await client.answer_callback_query(cq["id"])
+
+        # Language selection => store it, then run the deferred /start flow.
+        if data.startswith("lang_"):
+            lang = data.split("_", 1)[1]
+            if lang not in SUPPORTED_LANGS:
+                lang = DEFAULT_LANG
+            await set_language(org.id, chat_id, lang)
+            cand = (
+                await db.execute(
+                    select(Candidate).where(
+                        Candidate.org_id == org.id,
+                        Candidate.telegram_user_id == cq_user.get("id"),
+                    )
+                )
+            ).scalar_one_or_none()
+            if cand:
+                cand.language = lang
+                await db.commit()
+            param = await get_pending_start(org.id, chat_id) or ""
+            await clear_pending_start(org.id, chat_id)
+            await _start_flow(client, db, org, chat_id, lang, param)
+            return
+
+        lang = await _resolve_lang(db, org.id, chat_id, cq_user)
 
         # Cover-letter decision after a resume upload.
         if data.startswith("cover_skip_"):
@@ -130,9 +206,7 @@ async def handle_update(
                 return
             await clear_awaiting_cover_letter(org.id, chat_id)
             enqueue_score(app_id)
-            await client.send_message(
-                chat_id, "✅ Thanks! Your application is being reviewed. Good luck! 🍀"
-            )
+            await client.send_message(chat_id, t(lang, "application_reviewing"))
             return
         if data.startswith("cover_add_"):
             try:
@@ -140,19 +214,15 @@ async def handle_update(
             except (ValueError, IndexError):
                 return
             await set_awaiting_cover_letter(org.id, chat_id, app_id)
-            await client.send_message(
-                chat_id,
-                "✍️ Please send your cover letter now — as a text message or a file. "
-                "It will be considered together with your resume.",
-            )
+            await client.send_message(chat_id, t(lang, "cover_prompt"))
             return
 
         vacancy = await _vacancy_by_param(db, org.id, data)
         if vacancy:
             await set_selected_vacancy(org.id, chat_id, vacancy.id)
-            await _prompt_for_vacancy(client, chat_id, vacancy)
+            await _prompt_for_vacancy(client, chat_id, vacancy, lang)
         else:
-            await client.send_message(chat_id, "That position is no longer open.")
+            await client.send_message(chat_id, t(lang, "position_closed"))
         return
 
     message = update.get("message")
@@ -161,6 +231,7 @@ async def handle_update(
     chat_id = message["chat"]["id"]
     tg_user = message.get("from", {})
     text = message.get("text", "") or ""
+    lang = await _resolve_lang(db, org.id, chat_id, tg_user)
 
     # --- /forget : GDPR right to erasure ---
     if text.startswith("/forget"):
@@ -175,33 +246,17 @@ async def handle_update(
         if candidate:
             await erase_candidate(db, candidate)
             await db.commit()
-            await client.send_message(
-                chat_id, "🗑 All your data has been permanently deleted. Take care!"
-            )
+            await client.send_message(chat_id, t(lang, "forget_done"))
         else:
-            await client.send_message(chat_id, "We have no data stored for you.")
+            await client.send_message(chat_id, t(lang, "forget_none"))
         return
 
-    # --- /start [payload] ---
+    # --- /start [payload] : ask for language first, then continue ---
     if text.startswith("/start"):
         parts = text.split(maxsplit=1)
         payload = parts[1].strip() if len(parts) > 1 else ""
-        if payload:
-            vacancy = await _vacancy_by_param(db, org.id, payload)
-            if vacancy:
-                await set_selected_vacancy(org.id, chat_id, vacancy.id)
-                await _prompt_for_vacancy(client, chat_id, vacancy)
-                return
-            await client.send_message(chat_id, "That position is no longer open.")
-        vacancies = await _open_vacancies(db, org.id)
-        if not vacancies:
-            await client.send_message(chat_id, "There are no open positions right now.")
-        else:
-            await client.send_message(
-                chat_id,
-                "Please choose the position you're applying for:",
-                reply_markup=_vacancy_keyboard(vacancies),
-            )
+        await set_pending_start(org.id, chat_id, payload)
+        await client.send_message(chat_id, CHOOSE_LANGUAGE, reply_markup=language_keyboard())
         return
 
     # --- Resume upload (document or photo) ---
@@ -223,7 +278,7 @@ async def handle_update(
     cl_app_id = await get_awaiting_cover_letter(org.id, chat_id)
     if cl_app_id is not None:
         if not file_id and not text:
-            await client.send_message(chat_id, "Please send your cover letter as text or a file.")
+            await client.send_message(chat_id, t(lang, "cover_send_textfile"))
             return
         app_row = await db.get(Application, cl_app_id)
         if app_row is not None:
@@ -239,9 +294,7 @@ async def handle_update(
             await db.commit()
             enqueue_score(cl_app_id)
         await clear_awaiting_cover_letter(org.id, chat_id)
-        await client.send_message(
-            chat_id, "✅ Cover letter added — thank you! Your application is being reviewed. 🍀"
-        )
+        await client.send_message(chat_id, t(lang, "cover_added"))
         return
 
     if file_id:
@@ -273,9 +326,7 @@ async def handle_update(
             await db.commit()
             enqueue_submission(sub.id)
             await clear_awaiting_submission(org.id, chat_id)
-            await client.send_message(
-                chat_id, "✅ Your test task was received — thank you! We'll review it shortly."
-            )
+            await client.send_message(chat_id, t(lang, "test_received"))
             return
 
         vacancy_id = await get_selected_vacancy(org.id, chat_id)
@@ -286,7 +337,7 @@ async def handle_update(
             else:
                 await client.send_message(
                     chat_id,
-                    "Please choose a position first:",
+                    t(lang, "choose_position_first"),
                     reply_markup=_vacancy_keyboard(vacancies) if vacancies else None,
                 )
                 return
@@ -294,18 +345,16 @@ async def handle_update(
         # Validate extension
         ext = f".{filename.rsplit('.', 1)[-1].lower()}" if filename and "." in filename else ""
         if ext and ext not in ALLOWED_EXTENSIONS:
-            await client.send_message(
-                chat_id, "Unsupported file type. Please send a PDF, image, or Word document."
-            )
+            await client.send_message(chat_id, t(lang, "unsupported_file"))
             return
 
         tg_file = await client.get_file(file_id)
         data = await client.download_file(tg_file["file_path"])
         if len(data) > settings.max_upload_mb * 1024 * 1024:
-            await client.send_message(chat_id, "That file is too large.")
+            await client.send_message(chat_id, t(lang, "file_too_large"))
             return
 
-        candidate = await _upsert_candidate(db, org.id, tg_user)
+        candidate = await _upsert_candidate(db, org.id, tg_user, lang)
         # Consent + retention (GDPR). Submitting a resume records consent to processing.
         if candidate.consent_at is None:
             candidate.consent_at = datetime.now(timezone.utc)
@@ -330,21 +379,18 @@ async def handle_update(
         await clear_selected_vacancy(org.id, chat_id)
 
         # Offer to add a cover letter before scoring (it's factored into the AI analysis).
-        notice = "✅ Resume received!"
+        notice = t(lang, "resume_received")
         if org.privacy_notice:
             notice += f"\n\n{org.privacy_notice}"
-        notice += (
-            "\n\nWould you like to add a <b>cover letter</b>? It's considered in the AI review "
-            "and can strengthen your application."
-        )
+        notice += f"\n\n{t(lang, 'cover_ask')}"
         await client.send_message(
             chat_id,
             notice,
             reply_markup={
                 "inline_keyboard": [
                     [
-                        {"text": "✍️ Add cover letter", "callback_data": f"cover_add_{app_row.id}"},
-                        {"text": "Skip", "callback_data": f"cover_skip_{app_row.id}"},
+                        {"text": t(lang, "btn_add_cover"), "callback_data": f"cover_add_{app_row.id}"},
+                        {"text": t(lang, "btn_skip"), "callback_data": f"cover_skip_{app_row.id}"},
                     ]
                 ]
             },
@@ -388,10 +434,8 @@ async def handle_update(
                     summary=text[:120],
                 )
                 await db.commit()
-                await client.send_message(
-                    chat_id, "Thanks — your message was received. The team will get back to you. 🙌"
-                )
+                await client.send_message(chat_id, t(lang, "inbound_ack"))
                 return
 
     # --- Fallback ---
-    await client.send_message(chat_id, WELCOME)
+    await client.send_message(chat_id, t(lang, "welcome"))

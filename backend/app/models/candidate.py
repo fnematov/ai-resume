@@ -22,6 +22,7 @@ class Candidate(Base, TimestampMixin):
     full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    language: Mapped[str | None] = mapped_column(String(5), nullable=True)
 
     # GDPR
     consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
