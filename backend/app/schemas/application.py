@@ -44,6 +44,7 @@ class ApplicationListItem(BaseModel):
     created_at: datetime
     scored_at: datetime | None = None
     last_activity_at: datetime | None = None
+    chat_open: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -62,6 +63,10 @@ class ApplicationDetail(ApplicationListItem):
 class StageUpdate(BaseModel):
     stage: ApplicationStage
     reason: str | None = None
+
+
+class ChatToggle(BaseModel):
+    open: bool
 
 
 class SubmissionOut(BaseModel):

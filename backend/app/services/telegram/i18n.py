@@ -35,6 +35,9 @@ MESSAGES: dict[str, dict[str, str]] = {
         "file_too_large": "That file is too large.",
         "inbound_ack": "Thanks — your message was received. The team will get back to you. 🙌",
         "forget_hint": "ℹ️ Send /forget anytime to delete your data.",
+        "already_applied": "You've already applied for this position. Each candidate can apply once per role.",
+        "chat_locked": "✅ Your application is under review. We'll reach out here if we move forward — please wait. 🙏",
+        "chat_rejected": "Thank you for your interest. A decision has been made on this application. We wish you success! 🙏",
     },
     "uz": {
         "welcome": "Rezyumeingizni shu yerga yuboring (PDF, rasm yoki Word hujjat) — biz uni lavozimga moslab tahlil qilamiz.",
@@ -58,6 +61,9 @@ MESSAGES: dict[str, dict[str, str]] = {
         "file_too_large": "Bu fayl juda katta.",
         "inbound_ack": "Rahmat — xabaringiz qabul qilindi. Jamoa siz bilan bog'lanadi. 🙌",
         "forget_hint": "ℹ️ Ma'lumotlaringizni o'chirish uchun istalgan vaqt /forget yuboring.",
+        "already_applied": "Siz bu lavozimga allaqachon ariza topshirgansiz. Har bir nomzod bir lavozimga bir marta ariza topshira oladi.",
+        "chat_locked": "✅ Arizangiz ko'rib chiqilmoqda. Agar davom etsak, shu yerda bog'lanamiz — iltimos kuting. 🙏",
+        "chat_rejected": "Qiziqishingiz uchun rahmat. Bu ariza bo'yicha qaror qabul qilindi. Sizga omad tilaymiz! 🙏",
     },
     "ru": {
         "welcome": "Отправьте сюда своё резюме (PDF, изображение или Word) — мы сопоставим его с вакансией.",
@@ -81,6 +87,9 @@ MESSAGES: dict[str, dict[str, str]] = {
         "file_too_large": "Этот файл слишком большой.",
         "inbound_ack": "Спасибо — ваше сообщение получено. Команда свяжется с вами. 🙌",
         "forget_hint": "ℹ️ Отправьте /forget в любой момент, чтобы удалить свои данные.",
+        "already_applied": "Вы уже откликнулись на эту вакансию. Каждый кандидат может откликнуться один раз.",
+        "chat_locked": "✅ Ваша заявка на рассмотрении. Если двигаемся дальше, мы свяжемся здесь — пожалуйста, подождите. 🙏",
+        "chat_rejected": "Спасибо за интерес. По этой заявке принято решение. Желаем успехов! 🙏",
     },
 }
 

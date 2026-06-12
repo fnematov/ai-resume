@@ -196,6 +196,7 @@ export interface ApplicationListItem {
   created_at: string
   scored_at: string | null
   last_activity_at: string | null
+  chat_open: boolean
 }
 export interface ApplicationDetail extends ApplicationListItem {
   ai_result: AIResult | null

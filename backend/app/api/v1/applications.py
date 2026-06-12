@@ -29,6 +29,7 @@ from app.schemas.application import (
     ActivityOut,
     ApplicationDetail,
     ApplicationListItem,
+    ChatToggle,
     StageUpdate,
     SubmissionOut,
 )
@@ -278,9 +279,25 @@ async def send_message(
     msg = await send_to_candidate(
         db, app_row, payload.body, sent_by_user_id=user.id, actor=ActivityActor.user
     )
+    app_row.chat_open = True  # the recruiter reaching out opens the conversation
     await db.commit()
     await db.refresh(msg)
     return msg
+
+
+@router.patch("/{application_id}/chat", response_model=ApplicationDetail)
+async def set_chat_open(
+    application_id: int,
+    payload: ChatToggle,
+    user: User = Depends(get_org_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Open/close the candidate's free-text chat for this application."""
+    app_row = await _get_owned(application_id, user, db)
+    app_row.chat_open = payload.open
+    await db.commit()
+    await db.refresh(app_row)
+    return ApplicationDetail.model_validate(app_row)
 
 
 async def _resolve_body(db, app_row, action: str, payload: ActionIn) -> tuple[str, int | None]:
@@ -354,6 +371,9 @@ async def run_action(
     app_row.stage = target_stage
     if action == "reject":
         app_row.decision_reason = body[:500]
+        app_row.chat_open = False  # keep the chat closed for rejected candidates
+    else:
+        app_row.chat_open = True  # engaging the candidate opens the conversation
     await db.commit()
 
     # After sending a test task, mark the candidate as awaiting a submission so their next

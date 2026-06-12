@@ -254,7 +254,7 @@ const ACTIONS = [
         </div>
       </CardHeader>
       <CardContent>
-        <ConversationThread v-if="tab === 'chat'" :application-id="id" />
+        <ConversationThread v-if="tab === 'chat'" :application-id="id" :chat-open="app.chat_open" />
         <Timeline v-else :application-id="id" />
       </CardContent>
     </Card>

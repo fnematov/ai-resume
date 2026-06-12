@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -62,6 +62,8 @@ class Application(Base, TimestampMixin):
     last_activity_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Candidate free-text chat is blocked until the recruiter opens the conversation.
+    chat_open: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # 0..100; nullable until scored. Indexed for ranking.
     match_percentage: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     ai_result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

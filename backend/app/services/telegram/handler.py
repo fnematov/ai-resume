@@ -11,6 +11,7 @@ from app.models import (
     ActivityType,
     Application,
     ApplicationSource,
+    ApplicationStage,
     ApplicationStatus,
     Candidate,
     Message,
@@ -355,6 +356,23 @@ async def handle_update(
             return
 
         candidate = await _upsert_candidate(db, org.id, tg_user, lang)
+
+        # One application per candidate per vacancy — block duplicates.
+        already = (
+            await db.execute(
+                select(Application).where(
+                    Application.org_id == org.id,
+                    Application.candidate_id == candidate.id,
+                    Application.vacancy_id == vacancy_id,
+                ).limit(1)
+            )
+        ).scalar_one_or_none()
+        if already is not None:
+            await db.commit()  # persist any candidate upsert
+            await clear_selected_vacancy(org.id, chat_id)
+            await client.send_message(chat_id, t(lang, "already_applied"))
+            return
+
         # Consent + retention (GDPR). Submitting a resume records consent to processing.
         if candidate.consent_at is None:
             candidate.consent_at = datetime.now(timezone.utc)
@@ -397,7 +415,9 @@ async def handle_update(
         )
         return
 
-    # --- Free-text from a known candidate => inbound message (two-way chat) ---
+    # --- Free-text from a known candidate ---
+    # Chat is locked until the recruiter opens it. When locked, reply with a
+    # status-aware auto-message and do NOT record the message.
     if text:
         candidate = (
             await db.execute(
@@ -417,6 +437,13 @@ async def handle_update(
                 )
             ).scalar_one_or_none()
             if latest is not None:
+                if latest.stage in (ApplicationStage.rejected, ApplicationStage.withdrawn):
+                    await client.send_message(chat_id, t(lang, "chat_rejected"))
+                    return
+                if not latest.chat_open:
+                    await client.send_message(chat_id, t(lang, "chat_locked"))
+                    return
+                # Chat is open — record the candidate's reply for the recruiter.
                 db.add(
                     Message(
                         org_id=org.id,
@@ -434,8 +461,7 @@ async def handle_update(
                     summary=text[:120],
                 )
                 await db.commit()
-                # No auto-reply — the candidate's message is recorded silently for the recruiter.
                 return
 
-    # --- Fallback ---
+    # --- Fallback: only respond to strangers (no application yet) ---
     await client.send_message(chat_id, t(lang, "welcome"))

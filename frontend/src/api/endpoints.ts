@@ -134,6 +134,10 @@ export const applicationApi = {
     const { data } = await api.post<MessageItem>(`/applications/${id}/messages`, { body })
     return data
   },
+  async setChatOpen(id: number, open: boolean) {
+    const { data } = await api.patch<ApplicationDetail>(`/applications/${id}/chat`, { open })
+    return data
+  },
   async runAction(id: number, action: string, payload: ActionPayload) {
     const { data } = await api.post<ApplicationDetail>(`/applications/${id}/actions/${action}`, payload)
     return data
