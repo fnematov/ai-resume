@@ -434,7 +434,7 @@ async def handle_update(
                     summary=text[:120],
                 )
                 await db.commit()
-                await client.send_message(chat_id, t(lang, "inbound_ack"))
+                # No auto-reply — the candidate's message is recorded silently for the recruiter.
                 return
 
     # --- Fallback ---

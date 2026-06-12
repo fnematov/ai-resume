@@ -59,7 +59,7 @@ async def send_to_candidate(
             else:
                 result = await client.send_message(chat_id, body)
             msg.telegram_message_id = result.get("message_id")
-        except TelegramError as exc:
+        except Exception as exc:  # noqa: BLE001 - any send failure becomes a failed message, not a 500
             msg.status = MessageStatus.failed
             msg.error = str(exc)[:1000]
 
