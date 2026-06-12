@@ -80,3 +80,18 @@ async def get_current_org(
     org = await db.get(Organization, user.org_id)
     assert org is not None  # guaranteed active by get_org_user
     return org
+
+
+async def get_user_org_any_status(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Organization:
+    """The user's organization regardless of status (so a pending org can read its own info)."""
+    if user.role == UserRole.superadmin or user.org_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Organization account required"
+        )
+    org = await db.get(Organization, user.org_id)
+    if org is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    return org

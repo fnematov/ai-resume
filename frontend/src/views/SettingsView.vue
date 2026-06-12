@@ -70,12 +70,6 @@ function onProviderChange() {
       <p class="text-muted-foreground">{{ $t("settings.subtitle") }}</p>
     </div>
 
-    <Card v-if="org && org.status !== 'active'" class="border-amber-300 bg-amber-50">
-      <CardContent class="p-4 text-sm text-amber-900">
-        {{ $t("settings.notActive", { status: org.status }) }}
-      </CardContent>
-    </Card>
-
     <!-- Tabs -->
     <div class="flex gap-1 border-b">
       <button
@@ -111,7 +105,7 @@ function onProviderChange() {
           </div>
           <p v-if="tgError" class="text-sm text-destructive">{{ tgError }}</p>
           <p v-if="tgOk" class="text-sm text-green-600">{{ $t("settings.botConnected") }}</p>
-          <Button type="submit" :disabled="saveTelegram.isPending.value || !botToken">
+          <Button type="submit" :disabled="saveTelegram.isPending.value || !botToken || org?.status !== 'active'">
             <Spinner v-if="saveTelegram.isPending.value" /> {{ $t("settings.saveBot") }}
           </Button>
         </form>
@@ -151,7 +145,7 @@ function onProviderChange() {
           </div>
           <p v-if="aiError" class="text-sm text-destructive">{{ aiError }}</p>
           <p v-if="aiOk" class="text-sm text-green-600">{{ $t("settings.aiSaved") }}</p>
-          <Button type="submit" :disabled="saveAI.isPending.value || (!ai.api_key && !org?.ai_configured)">
+          <Button type="submit" :disabled="saveAI.isPending.value || (!ai.api_key && !org?.ai_configured) || org?.status !== 'active'">
             <Spinner v-if="saveAI.isPending.value" /> {{ $t("settings.saveAi") }}
           </Button>
         </form>

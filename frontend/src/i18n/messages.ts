@@ -17,6 +17,8 @@ export const messages = {
       signOut: "Chiqish",
       copied: "Nusxalandi!",
       copy: "Nusxalash",
+      pendingBanner:
+        "⏳ Tashkilotingiz tasdiqlanishini kutmoqda. Admin tasdiqlagach, barcha funksiyalar ochiladi.",
     },
     nav: {
       dashboard: "Boshqaruv paneli",
@@ -284,6 +286,8 @@ export const messages = {
       signOut: "Выйти",
       copied: "Скопировано!",
       copy: "Копировать",
+      pendingBanner:
+        "⏳ Ваша организация ожидает одобрения. После одобрения администратором откроются все функции.",
     },
     nav: {
       dashboard: "Дашборд",

@@ -6,11 +6,17 @@ import { ref } from "vue"
 import { apiError } from "@/api/client"
 import { templateApi } from "@/api/endpoints"
 import type { Template, TemplateType } from "@/api/types"
+import { useOrg } from "@/composables/useOrg"
 import VariableTextarea from "@/components/VariableTextarea.vue"
 import { Badge, Button, Card, CardContent, Input, Label, Modal, Spinner } from "@/components/ui"
 
 const qc = useQueryClient()
-const { data: templates, isLoading } = useQuery({ queryKey: ["templates"], queryFn: templateApi.list })
+const { isActive } = useOrg()
+const { data: templates, isLoading } = useQuery({
+  queryKey: ["templates"],
+  queryFn: templateApi.list,
+  enabled: isActive,
+})
 
 const TYPE_LABELS: Record<string, string> = {
   test_task: "Test task",
@@ -67,7 +73,7 @@ const remove = useMutation({
           {{ $t("templates.subtitle", { vars: VARS_HINT }) }}
         </p>
       </div>
-      <Button @click="openNew"><Plus class="h-4 w-4" /> {{ $t("templates.new") }}</Button>
+      <Button :disabled="!isActive" @click="openNew"><Plus class="h-4 w-4" /> {{ $t("templates.new") }}</Button>
     </div>
 
     <Card>

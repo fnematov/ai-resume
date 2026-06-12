@@ -6,12 +6,18 @@ import { ref } from "vue"
 import { apiError } from "@/api/client"
 import { vacancyApi } from "@/api/endpoints"
 import type { Vacancy, VacancyStatus } from "@/api/types"
+import { useOrg } from "@/composables/useOrg"
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Spinner, Textarea,
 } from "@/components/ui"
 
 const qc = useQueryClient()
-const { data: vacancies, isLoading } = useQuery({ queryKey: ["vacancies"], queryFn: vacancyApi.list })
+const { isActive } = useOrg()
+const { data: vacancies, isLoading } = useQuery({
+  queryKey: ["vacancies"],
+  queryFn: vacancyApi.list,
+  enabled: isActive,
+})
 
 const showForm = ref(false)
 const error = ref("")
@@ -53,7 +59,7 @@ function badge(v: Vacancy) {
         <h1 class="text-2xl font-bold tracking-tight">{{ $t("vacancy.title") }}</h1>
         <p class="text-muted-foreground">{{ $t("vacancy.subtitle") }}</p>
       </div>
-      <Button @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
+      <Button :disabled="!isActive" @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
     </div>
 
     <Card v-if="showForm">

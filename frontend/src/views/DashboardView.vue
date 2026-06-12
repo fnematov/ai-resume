@@ -3,18 +3,22 @@ import { useQuery } from "@tanstack/vue-query"
 import { Briefcase, CheckCircle2, FileText, Star } from "lucide-vue-next"
 import { computed } from "vue"
 
-import { analyticsApi, orgApi } from "@/api/endpoints"
+import { analyticsApi } from "@/api/endpoints"
 import StatCard from "@/components/StatCard.vue"
+import { useOrg } from "@/composables/useOrg"
 import { Badge, Card, CardContent, CardHeader, CardTitle, ScoreBar, Spinner } from "@/components/ui"
 import { formatDate } from "@/lib/utils"
 
-const { data: org } = useQuery({ queryKey: ["org"], queryFn: orgApi.me })
-const { data, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: analyticsApi.dashboard })
+const { org, isActive } = useOrg()
+const { data, isLoading } = useQuery({
+  queryKey: ["dashboard"],
+  queryFn: analyticsApi.dashboard,
+  enabled: isActive, // skip while the org is pending (the API would 403)
+})
 
 const maxBucket = computed(() =>
   Math.max(1, ...Object.values(data.value?.score_distribution ?? {})),
 )
-const pending = computed(() => org.value && org.value.status !== "active")
 </script>
 
 <template>
@@ -23,12 +27,6 @@ const pending = computed(() => org.value && org.value.status !== "active")
       <h1 class="text-2xl font-bold tracking-tight">{{ $t("dashboard.title") }}</h1>
       <p class="text-muted-foreground">{{ org?.name }}</p>
     </div>
-
-    <Card v-if="pending" class="border-amber-300 bg-amber-50">
-      <CardContent class="p-4 text-sm text-amber-900">
-        ⏳ {{ $t("dashboard.pending", { status: org?.status }) }}
-      </CardContent>
-    </Card>
 
     <div v-if="isLoading" class="grid place-items-center py-20"><Spinner class="h-6 w-6" /></div>
 

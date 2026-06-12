@@ -13,12 +13,14 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { RouterView, useRouter } from "vue-router"
 
+import { useOrg } from "@/composables/useOrg"
 import { LOCALES, setLocale } from "@/i18n"
 import { useAuthStore } from "@/stores/auth"
 
 const auth = useAuthStore()
 const router = useRouter()
 const { locale } = useI18n()
+const { isPending } = useOrg()
 
 const orgNav = [
   { name: "dashboard", label: "nav.dashboard", icon: LayoutDashboard },
@@ -85,6 +87,10 @@ function logout() {
     </aside>
 
     <main class="flex-1 overflow-auto">
+      <!-- Global awaiting-approval banner (shown on every page until activated) -->
+      <div v-if="isPending" class="border-b border-amber-300 bg-amber-50 px-8 py-3 text-sm font-medium text-amber-900">
+        {{ $t("common.pendingBanner") }}
+      </div>
       <div class="mx-auto max-w-6xl p-8">
         <RouterView />
       </div>

@@ -4,7 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.core.deps import get_current_org, get_org_user, get_superadmin
+from app.core.deps import (
+    get_current_org,
+    get_org_user,
+    get_superadmin,
+    get_user_org_any_status,
+)
 from app.core.security import encrypt_secret
 from app.core.utils import random_token
 from app.models import Organization, OrgStatus, User, Vacancy
@@ -36,7 +41,8 @@ async def _register_webhook(org: Organization, token: str, db: AsyncSession) -> 
 
 # ---------------- Org-side: my organization ----------------
 @router.get("/me", response_model=OrganizationOut)
-async def my_organization(org: Organization = Depends(get_current_org)):
+async def my_organization(org: Organization = Depends(get_user_org_any_status)):
+    # Accessible to pending orgs so the panel can show the awaiting-approval banner.
     return org
 
 

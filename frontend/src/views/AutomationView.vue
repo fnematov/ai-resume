@@ -6,11 +6,21 @@ import { computed, ref } from "vue"
 import { apiError } from "@/api/client"
 import { automationApi, templateApi } from "@/api/endpoints"
 import type { AutomationRule } from "@/api/types"
+import { useOrg } from "@/composables/useOrg"
 import { Badge, Button, Card, CardContent, Input, Label, Modal, Spinner } from "@/components/ui"
 
 const qc = useQueryClient()
-const { data: rules, isLoading } = useQuery({ queryKey: ["automation-rules"], queryFn: automationApi.list })
-const { data: templates } = useQuery({ queryKey: ["templates"], queryFn: templateApi.list })
+const { isActive } = useOrg()
+const { data: rules, isLoading } = useQuery({
+  queryKey: ["automation-rules"],
+  queryFn: automationApi.list,
+  enabled: isActive,
+})
+const { data: templates } = useQuery({
+  queryKey: ["templates"],
+  queryFn: templateApi.list,
+  enabled: isActive,
+})
 
 const ACTION_LABELS: Record<string, string> = {
   reject: "Auto-reject",
@@ -56,7 +66,7 @@ const hasRules = computed(() => (rules.value?.length ?? 0) > 0)
         <h1 class="text-2xl font-bold tracking-tight">{{ $t("automation.title") }}</h1>
         <p class="text-muted-foreground">{{ $t("automation.subtitle") }}</p>
       </div>
-      <Button @click="openNew"><Plus class="h-4 w-4" /> {{ $t("automation.new") }}</Button>
+      <Button :disabled="!isActive" @click="openNew"><Plus class="h-4 w-4" /> {{ $t("automation.new") }}</Button>
     </div>
 
     <Card>
