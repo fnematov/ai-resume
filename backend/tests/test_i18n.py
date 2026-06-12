@@ -24,11 +24,18 @@ def test_t_formats_variables():
 
 
 def test_t_falls_back_to_default_for_unknown_lang():
-    assert t("de", "file_too_large") == MESSAGES["en"]["file_too_large"]
-    assert t(None, "file_too_large") == MESSAGES["en"]["file_too_large"]
+    # Default is Uzbek.
+    assert t("de", "file_too_large") == MESSAGES["uz"]["file_too_large"]
+    assert t(None, "file_too_large") == MESSAGES["uz"]["file_too_large"]
 
 
-def test_language_keyboard_offers_all_languages():
+def test_supported_langs_are_uz_and_ru():
+    assert SUPPORTED_LANGS == ("uz", "ru")
+
+
+def test_language_keyboard_is_single_row_side_by_side():
     kb = language_keyboard()
-    codes = [btn["callback_data"] for row in kb["inline_keyboard"] for btn in row]
+    rows = kb["inline_keyboard"]
+    assert len(rows) == 1  # one row => buttons side by side
+    codes = [btn["callback_data"] for btn in rows[0]]
     assert codes == [f"lang_{c}" for c in SUPPORTED_LANGS]

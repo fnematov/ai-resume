@@ -4,11 +4,11 @@ Only the bot's own messages are translated. Org-authored content — vacancy tit
 message templates, privacy notice — is sent as written.
 """
 
-DEFAULT_LANG = "en"
-SUPPORTED_LANGS = ("uz", "ru", "en")
+DEFAULT_LANG = "uz"
+SUPPORTED_LANGS = ("uz", "ru")
 
-# Shown before a language is chosen (trilingual).
-CHOOSE_LANGUAGE = "🇺🇿 Tilni tanlang\n🇷🇺 Выберите язык\n🇬🇧 Choose your language:"
+# Shown before a language is chosen (bilingual).
+CHOOSE_LANGUAGE = "🇺🇿 Tilni tanlang / 🇷🇺 Выберите язык:"
 
 LANG_NAMES = {"uz": "🇺🇿 O'zbekcha", "ru": "🇷🇺 Русский", "en": "🇬🇧 English"}
 
@@ -92,9 +92,9 @@ def t(lang: str | None, key: str, **kwargs) -> str:
 
 
 def language_keyboard() -> dict:
+    # All languages on a single row (side by side).
     return {
         "inline_keyboard": [
-            [{"text": LANG_NAMES[code], "callback_data": f"lang_{code}"}]
-            for code in SUPPORTED_LANGS
+            [{"text": LANG_NAMES[code], "callback_data": f"lang_{code}"} for code in SUPPORTED_LANGS]
         ]
     }
