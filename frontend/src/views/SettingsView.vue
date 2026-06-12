@@ -13,8 +13,8 @@ import {
 
 const tab = ref<"integrations" | "privacy">("integrations")
 const TABS = [
-  { key: "integrations", label: "Integrations" },
-  { key: "privacy", label: "Privacy & data" },
+  { key: "integrations", label: "settings.tabIntegrations" },
+  { key: "privacy", label: "settings.tabPrivacy" },
 ] as const
 
 const qc = useQueryClient()
@@ -66,26 +66,26 @@ function onProviderChange() {
 <template>
   <div class="space-y-6 max-w-2xl">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">Settings</h1>
-      <p class="text-muted-foreground">Integrations and data settings for your organization.</p>
+      <h1 class="text-2xl font-bold tracking-tight">{{ $t("settings.title") }}</h1>
+      <p class="text-muted-foreground">{{ $t("settings.subtitle") }}</p>
     </div>
 
     <Card v-if="org && org.status !== 'active'" class="border-amber-300 bg-amber-50">
       <CardContent class="p-4 text-sm text-amber-900">
-        Your organization is <b>{{ org.status }}</b>. Settings save once an admin approves it.
+        {{ $t("settings.notActive", { status: org.status }) }}
       </CardContent>
     </Card>
 
     <!-- Tabs -->
     <div class="flex gap-1 border-b">
       <button
-        v-for="t in TABS"
-        :key="t.key"
+        v-for="tb in TABS"
+        :key="tb.key"
         class="-mb-px border-b-2 px-4 py-2 text-sm font-medium"
-        :class="tab === t.key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-        @click="tab = t.key"
+        :class="tab === tb.key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
+        @click="tab = tb.key"
       >
-        {{ t.label }}
+        {{ $t(tb.label) }}
       </button>
     </div>
 
@@ -95,28 +95,24 @@ function onProviderChange() {
     <Card>
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
-          Telegram bot
+          {{ $t("settings.telegramBot") }}
           <Badge v-if="org?.telegram_configured" variant="success">
             <CheckCircle2 class="h-3 w-3 mr-1" /> @{{ org.telegram_bot_username }}
           </Badge>
         </CardTitle>
-        <CardDescription>
-          Create a bot with @BotFather, paste its token here. We register the webhook automatically.
-        </CardDescription>
+        <CardDescription>{{ $t("settings.telegramHint") }}</CardDescription>
       </CardHeader>
       <CardContent>
         <form class="space-y-3" @submit.prevent="saveTelegram.mutate()">
           <div class="space-y-2">
-            <Label>Bot token</Label>
+            <Label>{{ $t("settings.botToken") }}</Label>
             <Input v-model="botToken" type="password" :placeholder="org?.telegram_configured ? '•••••••• (saved)' : '123456:ABC-DEF…'" />
-            <p v-if="org?.telegram_configured" class="text-xs text-muted-foreground">
-              ✓ A bot token is saved (hidden for security). Enter a new token only to replace it.
-            </p>
+            <p v-if="org?.telegram_configured" class="text-xs text-muted-foreground">{{ $t("settings.botTokenSaved") }}</p>
           </div>
           <p v-if="tgError" class="text-sm text-destructive">{{ tgError }}</p>
-          <p v-if="tgOk" class="text-sm text-green-600">Bot connected & webhook registered.</p>
+          <p v-if="tgOk" class="text-sm text-green-600">{{ $t("settings.botConnected") }}</p>
           <Button type="submit" :disabled="saveTelegram.isPending.value || !botToken">
-            <Spinner v-if="saveTelegram.isPending.value" /> Save bot
+            <Spinner v-if="saveTelegram.isPending.value" /> {{ $t("settings.saveBot") }}
           </Button>
         </form>
       </CardContent>
@@ -126,39 +122,37 @@ function onProviderChange() {
     <Card>
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
-          AI provider
+          {{ $t("settings.aiProvider") }}
           <Badge v-if="org?.ai_configured" variant="success">
             <CheckCircle2 class="h-3 w-3 mr-1" /> {{ org.ai_provider }} · {{ org.ai_model }}
           </Badge>
         </CardTitle>
-        <CardDescription>Bring your own API key. It is encrypted at rest and never shown again.</CardDescription>
+        <CardDescription>{{ $t("settings.aiHint") }}</CardDescription>
       </CardHeader>
       <CardContent>
         <form class="space-y-3" @submit.prevent="saveAI.mutate()">
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-2">
-              <Label>Provider</Label>
+              <Label>{{ $t("settings.provider") }}</Label>
               <select v-model="ai.provider" class="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" @change="onProviderChange">
                 <option value="claude">Claude (Anthropic)</option>
                 <option value="openai">OpenAI</option>
               </select>
             </div>
             <div class="space-y-2">
-              <Label>Model</Label>
+              <Label>{{ $t("settings.model") }}</Label>
               <Input v-model="ai.model" placeholder="claude-sonnet-4-6" />
             </div>
           </div>
           <div class="space-y-2">
-            <Label>API key</Label>
+            <Label>{{ $t("settings.apiKey") }}</Label>
             <Input v-model="ai.api_key" type="password" :placeholder="org?.ai_configured ? '•••••••• (saved)' : 'sk-…'" />
-            <p v-if="org?.ai_configured" class="text-xs text-muted-foreground">
-              ✓ An API key is saved (hidden). Enter a new one only to replace it.
-            </p>
+            <p v-if="org?.ai_configured" class="text-xs text-muted-foreground">{{ $t("settings.apiKeySaved") }}</p>
           </div>
           <p v-if="aiError" class="text-sm text-destructive">{{ aiError }}</p>
-          <p v-if="aiOk" class="text-sm text-green-600">AI provider saved.</p>
+          <p v-if="aiOk" class="text-sm text-green-600">{{ $t("settings.aiSaved") }}</p>
           <Button type="submit" :disabled="saveAI.isPending.value || (!ai.api_key && !org?.ai_configured)">
-            <Spinner v-if="saveAI.isPending.value" /> Save AI settings
+            <Spinner v-if="saveAI.isPending.value" /> {{ $t("settings.saveAi") }}
           </Button>
         </form>
       </CardContent>

@@ -58,10 +58,10 @@ function openAction(a: typeof action.value) {
 }
 
 const ACTIONS = [
-  { key: "test_task", label: "Test task", icon: FileText },
-  { key: "interview", label: "Interview", icon: Briefcase },
-  { key: "offer", label: "Offer", icon: Check },
-  { key: "reject", label: "Reject", icon: UserX },
+  { key: "test_task", label: "application.actionTestTask", icon: FileText },
+  { key: "interview", label: "application.actionInterview", icon: Briefcase },
+  { key: "offer", label: "application.actionOffer", icon: Check },
+  { key: "reject", label: "application.actionReject", icon: UserX },
 ] as const
 </script>
 
@@ -86,10 +86,10 @@ const ACTIONS = [
       </div>
       <div class="flex gap-2">
         <a :href="resumeUrl" target="_blank">
-          <Button variant="outline"><Download class="h-4 w-4" /> Resume</Button>
+          <Button variant="outline"><Download class="h-4 w-4" /> {{ $t("application.resume") }}</Button>
         </a>
         <Button variant="secondary" :disabled="rescore.isPending.value" @click="rescore.mutate()">
-          <Spinner v-if="rescore.isPending.value" /><RefreshCw v-else class="h-4 w-4" /> Re-score
+          <Spinner v-if="rescore.isPending.value" /><RefreshCw v-else class="h-4 w-4" /> {{ $t("application.rescore") }}
         </Button>
       </div>
     </div>
@@ -106,11 +106,11 @@ const ACTIONS = [
             :variant="a.key === 'reject' ? 'outline' : 'default'"
             @click="openAction(a.key)"
           >
-            <component :is="a.icon" class="h-4 w-4" /> {{ a.label }}
+            <component :is="a.icon" class="h-4 w-4" /> {{ $t(a.label) }}
           </Button>
         </div>
         <p v-if="app.decision_reason && app.stage === 'rejected'" class="text-xs text-muted-foreground">
-          Decision note: {{ app.decision_reason }}
+          {{ $t("application.decisionNote", { note: app.decision_reason }) }}
         </p>
       </CardContent>
     </Card>
@@ -119,7 +119,7 @@ const ACTIONS = [
     <Card v-if="app.cover_letter_text || app.cover_letter_filename">
       <CardHeader class="pb-2">
         <CardTitle class="flex items-center gap-2 text-base">
-          Cover letter
+          {{ $t("application.coverLetter") }}
           <a v-if="app.cover_letter_filename" :href="applicationApi.coverLetterUrl(id)" target="_blank">
             <Button variant="outline" size="sm"><Download class="h-4 w-4" /> {{ app.cover_letter_filename }}</Button>
           </a>
@@ -127,13 +127,13 @@ const ACTIONS = [
       </CardHeader>
       <CardContent>
         <p v-if="app.cover_letter_text" class="whitespace-pre-wrap text-sm leading-relaxed">{{ app.cover_letter_text }}</p>
-        <p v-else class="text-sm text-muted-foreground">Sent as a file — download above. Included in the AI review.</p>
+        <p v-else class="text-sm text-muted-foreground">{{ $t("application.coverLetterFile") }}</p>
       </CardContent>
     </Card>
 
     <!-- Interview -->
     <Card v-if="interviews?.length">
-      <CardHeader class="pb-2"><CardTitle class="text-base">Interview</CardTitle></CardHeader>
+      <CardHeader class="pb-2"><CardTitle class="text-base">{{ $t("application.interview") }}</CardTitle></CardHeader>
       <CardContent class="space-y-2">
         <div v-for="iv in interviews" :key="iv.id" class="rounded-md border p-3 text-sm">
           <div class="flex items-center gap-2">
@@ -150,7 +150,7 @@ const ACTIONS = [
 
     <!-- Test-task submissions -->
     <Card v-if="submissions?.length">
-      <CardHeader class="pb-2"><CardTitle class="text-base">Test task submissions</CardTitle></CardHeader>
+      <CardHeader class="pb-2"><CardTitle class="text-base">{{ $t("application.testSubmissions") }}</CardTitle></CardHeader>
       <CardContent class="space-y-3">
         <div v-for="s in submissions" :key="s.id" class="flex items-start justify-between gap-4 rounded-md border p-3">
           <div class="min-w-0">
@@ -172,7 +172,7 @@ const ACTIONS = [
     </Card>
     <Card v-else-if="app.status !== 'scored'">
       <CardContent class="p-8 text-center text-muted-foreground flex flex-col items-center gap-3">
-        <Spinner class="h-6 w-6" /> AI is reviewing this resume… (status: {{ app.status }})
+        <Spinner class="h-6 w-6" /> {{ $t("application.reviewing") }} ({{ $t(`statuses.${app.status}`) }})
       </CardContent>
     </Card>
 
@@ -181,38 +181,38 @@ const ACTIONS = [
         <Card class="lg:col-span-1">
           <CardContent class="p-6 flex flex-col items-center text-center gap-2">
             <div class="text-5xl font-bold tabular-nums" :class="scoreColor(r.match_percentage)">{{ r.match_percentage }}%</div>
-            <p class="text-sm text-muted-foreground">match score</p>
+            <p class="text-sm text-muted-foreground">{{ $t("application.matchScore") }}</p>
             <Badge :variant="r.recommended ? 'success' : 'muted'" class="mt-2">
               <Check v-if="r.recommended" class="h-3 w-3 mr-1" /><X v-else class="h-3 w-3 mr-1" />
-              {{ r.recommended ? "Recommended" : "Not recommended" }}
+              {{ r.recommended ? $t("application.recommended") : $t("application.notRecommended") }}
             </Badge>
             <p class="mt-1 text-sm font-medium">{{ r.verdict }}</p>
           </CardContent>
         </Card>
 
         <Card class="lg:col-span-2">
-          <CardHeader><CardTitle>Summary</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{{ $t("application.summary") }}</CardTitle></CardHeader>
           <CardContent><p class="text-sm leading-relaxed">{{ r.summary }}</p></CardContent>
         </Card>
       </div>
 
       <div class="grid gap-6 sm:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle class="text-base text-green-700">Matched skills</CardTitle></CardHeader>
+          <CardHeader><CardTitle class="text-base text-green-700">{{ $t("application.matchedSkills") }}</CardTitle></CardHeader>
           <CardContent class="flex flex-wrap gap-2">
             <Badge v-for="s in r.matched_skills" :key="s" variant="success">{{ s }}</Badge>
             <span v-if="!r.matched_skills.length" class="text-sm text-muted-foreground">None identified.</span>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle class="text-base text-red-700">Missing skills</CardTitle></CardHeader>
+          <CardHeader><CardTitle class="text-base text-red-700">{{ $t("application.missingSkills") }}</CardTitle></CardHeader>
           <CardContent class="flex flex-wrap gap-2">
             <Badge v-for="s in r.missing_skills" :key="s" variant="destructive">{{ s }}</Badge>
             <span v-if="!r.missing_skills.length" class="text-sm text-muted-foreground">None.</span>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle class="text-base">Strengths</CardTitle></CardHeader>
+          <CardHeader><CardTitle class="text-base">{{ $t("application.strengths") }}</CardTitle></CardHeader>
           <CardContent>
             <ul class="space-y-1 text-sm list-disc pl-5">
               <li v-for="s in r.strengths" :key="s">{{ s }}</li>
@@ -221,7 +221,7 @@ const ACTIONS = [
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle class="text-base">Concerns</CardTitle></CardHeader>
+          <CardHeader><CardTitle class="text-base">{{ $t("application.concerns") }}</CardTitle></CardHeader>
           <CardContent>
             <ul class="space-y-1 text-sm list-disc pl-5">
               <li v-for="s in r.concerns" :key="s">{{ s }}</li>
@@ -230,7 +230,7 @@ const ACTIONS = [
           </CardContent>
         </Card>
       </div>
-      <p class="text-xs text-muted-foreground">Scored by {{ app.ai_provider }} · {{ formatDate(app.scored_at) }}</p>
+      <p class="text-xs text-muted-foreground">{{ $t("application.scoredBy", { provider: app.ai_provider }) }} · {{ formatDate(app.scored_at) }}</p>
     </template>
 
     <!-- Communication: conversation + activity timeline -->
@@ -242,14 +242,14 @@ const ACTIONS = [
             :class="tab === 'chat' ? 'bg-accent' : 'text-muted-foreground hover:bg-accent/50'"
             @click="tab = 'chat'"
           >
-            Conversation
+            {{ $t("application.conversation") }}
           </button>
           <button
             class="rounded-md px-3 py-1.5 text-sm font-medium"
             :class="tab === 'timeline' ? 'bg-accent' : 'text-muted-foreground hover:bg-accent/50'"
             @click="tab = 'timeline'"
           >
-            Activity
+            {{ $t("application.activity") }}
           </button>
         </div>
       </CardHeader>

@@ -41,10 +41,10 @@ function badge(v: Vacancy) {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight">Vacancies</h1>
-        <p class="text-muted-foreground">Create roles and share their Telegram links.</p>
+        <h1 class="text-2xl font-bold tracking-tight">{{ $t("vacancy.title") }}</h1>
+        <p class="text-muted-foreground">{{ $t("vacancy.subtitle") }}</p>
       </div>
-      <Button @click="showForm = !showForm"><Plus class="h-4 w-4" /> New vacancy</Button>
+      <Button @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
     </div>
 
     <Card v-if="showForm">

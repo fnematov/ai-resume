@@ -20,6 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
   custom: "Custom",
 }
 const ph = (s: string) => `{{${s}}}`
+const VARS_HINT = [ph("candidate_name"), ph("job_title"), ph("scheduling_link")].join(", ")
 
 const open = ref(false)
 const editing = ref<Template | null>(null)
@@ -61,13 +62,12 @@ const remove = useMutation({
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight">Message templates</h1>
+        <h1 class="text-2xl font-bold tracking-tight">{{ $t("templates.title") }}</h1>
         <p class="text-muted-foreground">
-          Sent to candidates via Telegram. Variables like <code>{{ ph("candidate_name") }}</code>,
-          <code>{{ ph("job_title") }}</code>, <code>{{ ph("scheduling_link") }}</code> fill in automatically.
+          {{ $t("templates.subtitle", { vars: VARS_HINT }) }}
         </p>
       </div>
-      <Button @click="openNew"><Plus class="h-4 w-4" /> New template</Button>
+      <Button @click="openNew"><Plus class="h-4 w-4" /> {{ $t("templates.new") }}</Button>
     </div>
 
     <Card>
@@ -76,10 +76,10 @@ const remove = useMutation({
         <table v-else class="w-full text-sm">
           <thead class="border-b text-left text-xs uppercase text-muted-foreground">
             <tr>
-              <th class="px-4 py-3 font-medium">Type</th>
-              <th class="px-4 py-3 font-medium">Name</th>
-              <th class="px-4 py-3 font-medium">Preview</th>
-              <th class="px-4 py-3 font-medium text-right">Actions</th>
+              <th class="px-4 py-3 font-medium">{{ $t("templates.type") }}</th>
+              <th class="px-4 py-3 font-medium">{{ $t("common.name") }}</th>
+              <th class="px-4 py-3 font-medium">{{ $t("templates.preview") }}</th>
+              <th class="px-4 py-3 font-medium text-right">{{ $t("common.actions") }}</th>
             </tr>
           </thead>
           <tbody>

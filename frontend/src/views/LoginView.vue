@@ -31,27 +31,27 @@ async function submit() {
   <div class="min-h-screen grid place-items-center bg-muted/40 p-4">
     <Card class="w-full max-w-sm">
       <CardHeader>
-        <CardTitle class="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to the AI Resume admin panel.</CardDescription>
+        <CardTitle class="text-2xl">{{ $t("auth.welcomeBack") }}</CardTitle>
+        <CardDescription>{{ $t("auth.signInSubtitle") }}</CardDescription>
       </CardHeader>
       <CardContent>
         <form class="space-y-4" @submit.prevent="submit">
           <div class="space-y-2">
-            <Label for="email">Email</Label>
+            <Label for="email">{{ $t("auth.email") }}</Label>
             <Input id="email" v-model="email" type="email" placeholder="you@company.com" />
           </div>
           <div class="space-y-2">
-            <Label for="password">Password</Label>
+            <Label for="password">{{ $t("auth.password") }}</Label>
             <Input id="password" v-model="password" type="password" placeholder="••••••••" />
           </div>
           <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
           <Button type="submit" class="w-full" :disabled="loading">
-            <Spinner v-if="loading" /> Sign in
+            <Spinner v-if="loading" /> {{ $t("auth.signIn") }}
           </Button>
         </form>
         <p class="mt-4 text-center text-sm text-muted-foreground">
-          No account?
-          <RouterLink to="/register" class="text-primary underline-offset-4 hover:underline">Register your organization</RouterLink>
+          {{ $t("auth.noAccount") }}
+          <RouterLink to="/register" class="text-primary underline-offset-4 hover:underline">{{ $t("auth.registerOrg") }}</RouterLink>
         </p>
       </CardContent>
     </Card>

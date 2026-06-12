@@ -3,7 +3,7 @@ import { Check } from "lucide-vue-next"
 import { computed } from "vue"
 
 import type { ApplicationStage } from "@/api/types"
-import { STAGE_LABELS, STAGE_ORDER } from "@/api/types"
+import { STAGE_ORDER } from "@/api/types"
 
 const props = defineProps<{ stage: ApplicationStage }>()
 
@@ -25,12 +25,12 @@ const currentIndex = computed(() => STAGE_ORDER.indexOf(props.stage))
         ]"
       >
         <Check v-if="i < currentIndex && !isTerminalNegative" class="h-3 w-3" />
-        {{ STAGE_LABELS[s] }}
+        {{ $t(`stages.${s}`) }}
       </div>
       <span v-if="i < STAGE_ORDER.length - 1" class="text-muted-foreground/40">›</span>
     </template>
     <div v-if="isTerminalNegative" class="ml-2 rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
-      {{ STAGE_LABELS[stage] }}
+      {{ $t(`stages.${stage}`) }}
     </div>
   </div>
 </template>

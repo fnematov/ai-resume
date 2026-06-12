@@ -10,23 +10,26 @@ import {
   Zap,
 } from "lucide-vue-next"
 import { computed } from "vue"
+import { useI18n } from "vue-i18n"
 import { RouterView, useRouter } from "vue-router"
 
+import { LOCALES, setLocale } from "@/i18n"
 import { useAuthStore } from "@/stores/auth"
 
 const auth = useAuthStore()
 const router = useRouter()
+const { locale } = useI18n()
 
 const orgNav = [
-  { name: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { name: "vacancies", label: "Vacancies", icon: Briefcase },
-  { name: "templates", label: "Templates", icon: MessageSquareText },
-  { name: "automation", label: "Automation", icon: Zap },
-  { name: "settings", label: "Settings", icon: Settings },
+  { name: "dashboard", label: "nav.dashboard", icon: LayoutDashboard },
+  { name: "vacancies", label: "nav.vacancies", icon: Briefcase },
+  { name: "templates", label: "nav.templates", icon: MessageSquareText },
+  { name: "automation", label: "nav.automation", icon: Zap },
+  { name: "settings", label: "nav.settings", icon: Settings },
 ]
 const adminNav = [
-  { name: "admin-platform", label: "Platform", icon: ShieldCheck },
-  { name: "admin-orgs", label: "Organizations", icon: Building2 },
+  { name: "admin-platform", label: "nav.platform", icon: ShieldCheck },
+  { name: "admin-orgs", label: "nav.organizations", icon: Building2 },
 ]
 const nav = computed(() => (auth.isSuperadmin ? adminNav : orgNav))
 
@@ -52,10 +55,22 @@ function logout() {
           active-class="bg-accent text-accent-foreground"
         >
           <component :is="item.icon" class="h-4 w-4" />
-          {{ item.label }}
+          {{ $t(item.label) }}
         </RouterLink>
       </nav>
       <div class="p-3 border-t">
+        <!-- Language switcher -->
+        <div class="mb-2 flex gap-1 px-1">
+          <button
+            v-for="l in LOCALES"
+            :key="l.code"
+            class="flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+            :class="locale === l.code ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'"
+            @click="setLocale(l.code)"
+          >
+            {{ l.label }}
+          </button>
+        </div>
         <div class="px-3 py-2 mb-1">
           <p class="text-sm font-medium truncate">{{ auth.user?.full_name }}</p>
           <p class="text-xs text-muted-foreground truncate">{{ auth.user?.email }}</p>
@@ -64,7 +79,7 @@ function logout() {
           class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           @click="logout"
         >
-          <LogOut class="h-4 w-4" /> Sign out
+          <LogOut class="h-4 w-4" /> {{ $t("common.signOut") }}
         </button>
       </div>
     </aside>

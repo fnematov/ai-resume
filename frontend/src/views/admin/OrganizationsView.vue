@@ -23,8 +23,8 @@ const variant: Record<OrgStatus, "success" | "warning" | "destructive"> = {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">Organizations</h1>
-      <p class="text-muted-foreground">Approve, suspend, or re-activate organizations.</p>
+      <h1 class="text-2xl font-bold tracking-tight">{{ $t("admin.orgsTitle") }}</h1>
+      <p class="text-muted-foreground">{{ $t("admin.orgsSubtitle") }}</p>
     </div>
 
     <div v-if="isLoading" class="grid place-items-center py-20"><Spinner class="h-6 w-6" /></div>

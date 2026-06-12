@@ -77,7 +77,7 @@ function openApp(id: number) {
         ← {{ vacancy?.title || "Vacancy" }}
       </button>
       <div class="mt-1 flex items-center justify-between">
-        <h1 class="text-2xl font-bold tracking-tight">Pipeline</h1>
+        <h1 class="text-2xl font-bold tracking-tight">{{ $t("vacancy.pipelineBoard") }}</h1>
         <RouterLink :to="{ name: 'vacancy', params: { id: vacancyId } }" class="text-sm text-primary hover:underline">
           Ranked list →
         </RouterLink>
@@ -89,7 +89,7 @@ function openApp(id: number) {
     <div v-else class="flex gap-4 overflow-x-auto pb-4">
       <div v-for="col in COLUMNS" :key="col" class="w-72 shrink-0">
         <div class="mb-2 flex items-center justify-between px-1">
-          <span class="text-sm font-semibold">{{ STAGE_LABELS[col] }}</span>
+          <span class="text-sm font-semibold">{{ $t(`stages.${col}`) }}</span>
           <Badge variant="muted">{{ board[col]?.length || 0 }}</Badge>
         </div>
         <draggable
