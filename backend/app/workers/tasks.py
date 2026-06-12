@@ -84,6 +84,7 @@ async def _run_score(SessionLocal, application_id: int) -> None:
                 requirements=vacancy.requirements,
                 employment_type=vacancy.employment_type,
                 location=vacancy.location,
+                ai_instructions=vacancy.ai_instructions,
             )
             # Produce the AI's text in the language the candidate chose when applying.
             candidate = (

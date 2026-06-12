@@ -9,6 +9,7 @@ class VacancyBase(BaseModel):
     requirements: str = ""
     employment_type: str | None = None
     location: str | None = None
+    ai_instructions: str | None = None
 
 
 class VacancyCreate(VacancyBase):
@@ -21,6 +22,7 @@ class VacancyUpdate(BaseModel):
     requirements: str | None = None
     employment_type: str | None = None
     location: str | None = None
+    ai_instructions: str | None = None
     status: VacancyStatus | None = None
 
 

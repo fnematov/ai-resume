@@ -24,6 +24,8 @@ class Vacancy(Base, TimestampMixin):
     requirements: Mapped[str] = mapped_column(Text, nullable=False, default="")
     employment_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
     location: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    # Optional extra instructions / strict rules appended to the AI scoring prompt.
+    ai_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[VacancyStatus] = mapped_column(
         SAEnum(VacancyStatus, name="vacancy_status"), default=VacancyStatus.draft, nullable=False
     )

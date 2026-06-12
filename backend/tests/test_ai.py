@@ -77,6 +77,16 @@ def test_submission_prompt_includes_task_and_criteria():
     assert "Clean code, tests" in prompt
 
 
+def test_recruiter_ai_instructions_included_in_prompt():
+    from app.services.ai.base import build_system_prompt
+
+    prompt = build_system_prompt(JobSpec(title="x", ai_instructions="Reject without 5+ years"))
+    assert "Additional rules from the recruiter" in prompt
+    assert "Reject without 5+ years" in prompt
+    # No section when not provided
+    assert "Additional rules from the recruiter" not in build_system_prompt(JobSpec(title="x"))
+
+
 def test_language_instruction_added_for_non_english():
     from app.services.ai.base import build_system_prompt
 

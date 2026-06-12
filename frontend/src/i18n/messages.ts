@@ -72,6 +72,9 @@ export const messages = {
       location: "Joylashuv",
       description: "Tavsif",
       requirements: "Talablar / majburiy ko'nikmalar",
+      aiInstructions: "AI uchun qo'shimcha ko'rsatmalar (ixtiyoriy)",
+      aiInstructionsHint:
+        "Baholash uchun qat'iy qoidalar. Masalan: 'Faqat 3+ yil Laravel tajribasi bo'lganlarni yuqori baholang' yoki 'Diplom shart emas'.",
       noDescription: "Tavsif yo'q",
       applicantsCount: "{n} arizachi",
       empty: "Hali vakansiyalar yo'q. Birinchi lavozimni yarating.",
@@ -331,6 +334,9 @@ export const messages = {
       location: "Локация",
       description: "Описание",
       requirements: "Требования / обязательные навыки",
+      aiInstructions: "Доп. инструкции для AI (необязательно)",
+      aiInstructionsHint:
+        "Строгие правила оценки. Например: «Высоко оценивай только с опытом Laravel 3+ года» или «Диплом не обязателен».",
       noDescription: "Нет описания",
       applicantsCount: "{n} кандидатов",
       empty: "Пока нет вакансий. Создайте первую должность.",

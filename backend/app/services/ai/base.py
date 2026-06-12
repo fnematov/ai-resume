@@ -28,6 +28,7 @@ class JobSpec:
     requirements: str = ""
     employment_type: str | None = None
     location: str | None = None
+    ai_instructions: str | None = None
 
 
 @dataclass
@@ -145,6 +146,11 @@ def build_system_prompt(job: JobSpec, language: str | None = None) -> str:
         parts.append(f"\n# Job description\n{job.description.strip()}")
     if job.requirements.strip():
         parts.append(f"\n# Requirements / must-haves\n{job.requirements.strip()}")
+    if job.ai_instructions and job.ai_instructions.strip():
+        parts.append(
+            "\n# Additional rules from the recruiter (MUST be strictly followed)\n"
+            f"{job.ai_instructions.strip()}"
+        )
     parts.append(
         "\nReturn ONLY the structured result via the provided schema. "
         "match_percentage must reflect overall fit (skills, experience, seniority)."

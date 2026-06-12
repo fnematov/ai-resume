@@ -158,6 +158,7 @@ export interface Vacancy {
   requirements: string
   employment_type: string | null
   location: string | null
+  ai_instructions: string | null
   status: VacancyStatus
   deep_link_param: string | null
   deep_link_url: string | null

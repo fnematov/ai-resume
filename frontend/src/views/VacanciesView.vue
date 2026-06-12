@@ -15,14 +15,23 @@ const { data: vacancies, isLoading } = useQuery({ queryKey: ["vacancies"], query
 
 const showForm = ref(false)
 const error = ref("")
-const form = ref({ title: "", description: "", requirements: "", employment_type: "", location: "", status: "open" as VacancyStatus })
+const emptyForm = () => ({
+  title: "",
+  description: "",
+  requirements: "",
+  employment_type: "",
+  location: "",
+  ai_instructions: "",
+  status: "open" as VacancyStatus,
+})
+const form = ref(emptyForm())
 
 const create = useMutation({
   mutationFn: () => vacancyApi.create(form.value),
   onSuccess: () => {
     qc.invalidateQueries({ queryKey: ["vacancies"] })
     showForm.value = false
-    form.value = { title: "", description: "", requirements: "", employment_type: "", location: "", status: "open" }
+    form.value = emptyForm()
   },
   onError: (e) => (error.value = apiError(e)),
 })
@@ -53,38 +62,43 @@ function badge(v: Vacancy) {
         <form class="space-y-4" @submit.prevent="create.mutate()">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2 sm:col-span-2">
-              <Label>Title</Label>
+              <Label>{{ $t("vacancy.titleField") }}</Label>
               <Input v-model="form.title" placeholder="PHP / Laravel Developer" />
             </div>
             <div class="space-y-2">
-              <Label>Employment type</Label>
+              <Label>{{ $t("vacancy.employmentType") }}</Label>
               <Input v-model="form.employment_type" placeholder="Full-time" />
             </div>
             <div class="space-y-2">
-              <Label>Location</Label>
+              <Label>{{ $t("vacancy.location") }}</Label>
               <Input v-model="form.location" placeholder="Remote" />
             </div>
           </div>
           <div class="space-y-2">
-            <Label>Description</Label>
-            <Textarea v-model="form.description" :rows="3" placeholder="What the role involves…" />
+            <Label>{{ $t("vacancy.description") }}</Label>
+            <Textarea v-model="form.description" :rows="3" />
           </div>
           <div class="space-y-2">
-            <Label>Requirements / must-haves</Label>
+            <Label>{{ $t("vacancy.requirements") }}</Label>
             <Textarea v-model="form.requirements" :rows="3" placeholder="PHP, Laravel, MySQL, 3+ years…" />
           </div>
           <div class="space-y-2">
-            <Label>Status</Label>
+            <Label>{{ $t("vacancy.aiInstructions") }}</Label>
+            <Textarea v-model="form.ai_instructions" :rows="3" />
+            <p class="text-xs text-muted-foreground">{{ $t("vacancy.aiInstructionsHint") }}</p>
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("common.status") }}</Label>
             <select v-model="form.status" class="h-9 w-40 rounded-md border border-input bg-transparent px-3 text-sm">
-              <option value="open">Open</option>
-              <option value="draft">Draft</option>
-              <option value="closed">Closed</option>
+              <option value="open">{{ $t("vacancyStatus.open") }}</option>
+              <option value="draft">{{ $t("vacancyStatus.draft") }}</option>
+              <option value="closed">{{ $t("vacancyStatus.closed") }}</option>
             </select>
           </div>
           <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
           <div class="flex gap-2">
-            <Button type="submit" :disabled="create.isPending.value"><Spinner v-if="create.isPending.value" /> Create</Button>
-            <Button type="button" variant="ghost" @click="showForm = false">Cancel</Button>
+            <Button type="submit" :disabled="create.isPending.value"><Spinner v-if="create.isPending.value" /> {{ $t("common.create") }}</Button>
+            <Button type="button" variant="ghost" @click="showForm = false">{{ $t("common.cancel") }}</Button>
           </div>
         </form>
       </CardContent>

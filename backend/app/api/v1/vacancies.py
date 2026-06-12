@@ -55,6 +55,7 @@ async def create_vacancy(
         requirements=payload.requirements,
         employment_type=payload.employment_type,
         location=payload.location,
+        ai_instructions=payload.ai_instructions,
         status=payload.status,
     )
     db.add(vacancy)
