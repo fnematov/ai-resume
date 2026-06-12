@@ -12,6 +12,7 @@ from app.models import (
     Application,
     ApplicationStage,
     ApplicationStatus,
+    Candidate,
     Organization,
     Submission,
     SubmissionStatus,
@@ -84,7 +85,12 @@ async def _run_score(SessionLocal, application_id: int) -> None:
                 employment_type=vacancy.employment_type,
                 location=vacancy.location,
             )
-            result = await provider.score_resume(job, document)
+            # Produce the AI's text in the language the candidate chose when applying.
+            candidate = (
+                await db.get(Candidate, app_row.candidate_id) if app_row.candidate_id else None
+            )
+            language = candidate.language if candidate else None
+            result = await provider.score_resume(job, document, language)
 
             app_row.ai_result = result.to_dict()
             app_row.match_percentage = result.match_percentage
@@ -152,8 +158,14 @@ async def _evaluate(submission_id: int) -> None:
                     description=vacancy.description,
                     requirements=vacancy.requirements,
                 )
+                candidate = (
+                    await db.get(Candidate, app_row.candidate_id)
+                    if app_row and app_row.candidate_id
+                    else None
+                )
+                language = candidate.language if candidate else None
                 result = await provider.evaluate_submission(
-                    job, document, sub.instructions or "", sub.criteria or ""
+                    job, document, sub.instructions or "", sub.criteria or "", language
                 )
                 sub.ai_score = result.match_percentage
                 sub.ai_feedback = result.to_dict()

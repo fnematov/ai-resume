@@ -75,3 +75,15 @@ def test_submission_prompt_includes_task_and_criteria():
     prompt = build_submission_prompt(JobSpec(title="PHP Dev"), "Build a CRUD API", "Clean code, tests")
     assert "Build a CRUD API" in prompt
     assert "Clean code, tests" in prompt
+
+
+def test_language_instruction_added_for_non_english():
+    from app.services.ai.base import build_system_prompt
+
+    uz = build_system_prompt(JobSpec(title="x"), "uz")
+    assert "Uzbek" in uz
+    ru = build_system_prompt(JobSpec(title="x"), "ru")
+    assert "Russian" in ru
+    # English (or None) adds no language instruction
+    assert "IMPORTANT: Write" not in build_system_prompt(JobSpec(title="x"), "en")
+    assert "IMPORTANT: Write" not in build_system_prompt(JobSpec(title="x"))

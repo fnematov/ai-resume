@@ -110,7 +110,22 @@ SCORE_JSON_SCHEMA: dict = {
 }
 
 
-def build_system_prompt(job: JobSpec) -> str:
+LANGUAGE_NAMES = {"uz": "Uzbek (O'zbekcha)", "ru": "Russian (Русский)", "en": "English"}
+
+
+def _language_instruction(language: str | None) -> str:
+    """Tell the model which language to write the natural-language fields in."""
+    name = LANGUAGE_NAMES.get(language or "en")
+    if not name or language in (None, "en"):
+        return ""
+    return (
+        f"\n\nIMPORTANT: Write the `verdict`, `summary`, `strengths`, `concerns`, `matched_skills` "
+        f"and `missing_skills` fields in {name}. Keep technology names, tools, frameworks and other "
+        f"proper nouns in their original form (e.g. PHP, Laravel, AWS, React)."
+    )
+
+
+def build_system_prompt(job: JobSpec, language: str | None = None) -> str:
     parts = [
         "You are an expert technical recruiter screening candidates for a specific job.",
         "Evaluate the candidate's application (resume, and a cover letter if one is provided) "
@@ -133,11 +148,14 @@ def build_system_prompt(job: JobSpec) -> str:
     parts.append(
         "\nReturn ONLY the structured result via the provided schema. "
         "match_percentage must reflect overall fit (skills, experience, seniority)."
+        + _language_instruction(language)
     )
     return "\n".join(parts)
 
 
-def build_submission_prompt(job: JobSpec, instructions: str, criteria: str) -> str:
+def build_submission_prompt(
+    job: JobSpec, instructions: str, criteria: str, language: str | None = None
+) -> str:
     parts = [
         "You are a senior engineer grading a candidate's submitted test task.",
         "Evaluate the submission STRICTLY and fairly against the task and the grading criteria.",
@@ -151,7 +169,10 @@ def build_submission_prompt(job: JobSpec, instructions: str, criteria: str) -> s
         parts.append(f"\n# Test task given to the candidate\n{instructions.strip()}")
     if criteria.strip():
         parts.append(f"\n# Grading criteria\n{criteria.strip()}")
-    parts.append("\nReturn ONLY the structured result via the provided schema.")
+    parts.append(
+        "\nReturn ONLY the structured result via the provided schema."
+        + _language_instruction(language)
+    )
     return "\n".join(parts)
 
 
@@ -165,10 +186,19 @@ class AIProvider(ABC):
         """Run the model with a system prompt + document, returning a structured ScoreResult."""
         raise NotImplementedError
 
-    async def score_resume(self, job: JobSpec, document: ResumeDocument) -> ScoreResult:
-        return await self._assess(build_system_prompt(job), document)
+    async def score_resume(
+        self, job: JobSpec, document: ResumeDocument, language: str | None = None
+    ) -> ScoreResult:
+        return await self._assess(build_system_prompt(job, language), document)
 
     async def evaluate_submission(
-        self, job: JobSpec, document: ResumeDocument, instructions: str, criteria: str
+        self,
+        job: JobSpec,
+        document: ResumeDocument,
+        instructions: str,
+        criteria: str,
+        language: str | None = None,
     ) -> ScoreResult:
-        return await self._assess(build_submission_prompt(job, instructions, criteria), document)
+        return await self._assess(
+            build_submission_prompt(job, instructions, criteria, language), document
+        )
