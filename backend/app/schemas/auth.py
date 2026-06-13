@@ -35,3 +35,12 @@ class RegisterOrganization(BaseModel):
 
 class LoginResponse(Token):
     user: UserOut
+
+
+class UpdateMe(BaseModel):
+    full_name: str = Field(min_length=2, max_length=160)
+
+
+class ChangePassword(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=8, max_length=128)

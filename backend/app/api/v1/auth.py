@@ -16,10 +16,12 @@ from app.core.security import (
 from app.core.utils import slugify
 from app.models import Organization, OrgStatus, User, UserRole
 from app.schemas.auth import (
+    ChangePassword,
     LoginResponse,
     RefreshRequest,
     RegisterOrganization,
     Token,
+    UpdateMe,
     UserOut,
 )
 
@@ -108,3 +110,30 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_me(
+    payload: UpdateMe,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user.full_name = payload.full_name
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePassword,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(payload.old_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect"
+        )
+    user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+    return {"ok": True}

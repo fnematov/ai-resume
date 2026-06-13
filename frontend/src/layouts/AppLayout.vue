@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   Settings,
   ShieldCheck,
+  UserCircle,
   Zap,
 } from "lucide-vue-next"
 import { computed } from "vue"
@@ -26,10 +27,12 @@ const orgNav = [
   { name: "templates", label: "nav.templates", icon: MessageSquareText },
   { name: "automation", label: "nav.automation", icon: Zap },
   { name: "settings", label: "nav.settings", icon: Settings },
+  { name: "profile", label: "nav.profile", icon: UserCircle },
 ]
 const adminNav = [
   { name: "admin-platform", label: "nav.platform", icon: ShieldCheck },
   { name: "admin-orgs", label: "nav.organizations", icon: Building2 },
+  { name: "profile", label: "nav.profile", icon: UserCircle },
 ]
 const nav = computed(() => (auth.isSuperadmin ? adminNav : orgNav))
 
@@ -40,13 +43,13 @@ function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-muted/30">
-    <aside class="w-60 shrink-0 border-r bg-card flex flex-col">
-      <div class="h-14 flex items-center gap-2 px-5 border-b">
+  <div class="flex h-screen overflow-hidden bg-muted/30">
+    <aside class="flex w-60 shrink-0 flex-col border-r bg-card">
+      <div class="flex h-14 shrink-0 items-center gap-2 border-b px-5">
         <div class="h-7 w-7 rounded-md bg-primary text-primary-foreground grid place-items-center text-sm font-bold">AR</div>
         <span class="font-semibold">AI Resume</span>
       </div>
-      <nav class="flex-1 p-3 space-y-1">
+      <nav class="flex-1 overflow-y-auto p-3 space-y-1">
         <RouterLink
           v-for="item in nav"
           :key="item.name"
@@ -58,7 +61,7 @@ function logout() {
           {{ $t(item.label) }}
         </RouterLink>
       </nav>
-      <div class="p-3 border-t">
+      <div class="shrink-0 border-t p-3">
         <!-- Language switcher -->
         <div class="mb-2 flex gap-1 px-1">
           <button
@@ -71,10 +74,14 @@ function logout() {
             {{ l.label }}
           </button>
         </div>
-        <div class="px-3 py-2 mb-1">
-          <p class="text-sm font-medium truncate">{{ auth.user?.full_name }}</p>
-          <p class="text-xs text-muted-foreground truncate">{{ auth.user?.email }}</p>
-        </div>
+        <RouterLink
+          :to="{ name: 'profile' }"
+          class="mb-1 block rounded-md px-3 py-2 hover:bg-accent"
+          active-class="bg-accent"
+        >
+          <p class="truncate text-sm font-medium">{{ auth.user?.full_name }}</p>
+          <p class="truncate text-xs text-muted-foreground">{{ auth.user?.email }}</p>
+        </RouterLink>
         <button
           class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           @click="logout"

@@ -41,6 +41,13 @@ export const authApi = {
     const { data } = await api.get<User>("/auth/me")
     return data
   },
+  async updateMe(full_name: string) {
+    const { data } = await api.patch<User>("/auth/me", { full_name })
+    return data
+  },
+  async changePassword(old_password: string, new_password: string) {
+    await api.post("/auth/change-password", { old_password, new_password })
+  },
 }
 
 // ---- Organizations ----

@@ -20,6 +20,7 @@ const router = createRouter({
         { path: "templates", name: "templates", component: () => import("@/views/TemplatesView.vue") },
         { path: "automation", name: "automation", component: () => import("@/views/AutomationView.vue") },
         { path: "settings", name: "settings", component: () => import("@/views/SettingsView.vue") },
+        { path: "profile", name: "profile", component: () => import("@/views/ProfileView.vue") },
         // Super-admin
         { path: "admin/organizations", name: "admin-orgs", component: () => import("@/views/admin/OrganizationsView.vue"), meta: { superadmin: true } },
         { path: "admin/platform", name: "admin-platform", component: () => import("@/views/admin/PlatformView.vue"), meta: { superadmin: true } },
