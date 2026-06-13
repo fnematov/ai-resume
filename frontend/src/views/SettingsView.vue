@@ -6,6 +6,7 @@ import { ref, watch } from "vue"
 import { apiError } from "@/api/client"
 import { orgApi } from "@/api/endpoints"
 import CalendlyCard from "@/components/CalendlyCard.vue"
+import CompanyProfileCard from "@/components/CompanyProfileCard.vue"
 import GdprCard from "@/components/GdprCard.vue"
 import PendingBanner from "@/components/PendingBanner.vue"
 import {
@@ -88,6 +89,9 @@ function onProviderChange() {
 
     <!-- Integrations tab -->
     <div v-show="tab === 'integrations'" class="space-y-6">
+    <!-- Company profile -->
+    <CompanyProfileCard />
+
     <!-- Telegram -->
     <Card>
       <CardHeader>

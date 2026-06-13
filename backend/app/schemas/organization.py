@@ -17,6 +17,8 @@ class OrganizationOut(BaseModel):
     calendly_scheduling_url: str | None = None
     retention_days: int | None = None
     privacy_notice: str | None = None
+    about: str | None = None
+    website: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -46,3 +48,8 @@ class OrgStatusUpdate(BaseModel):
 class GdprSettingsIn(BaseModel):
     retention_days: int | None = None
     privacy_notice: str | None = None
+
+
+class ProfileSettingsIn(BaseModel):
+    about: str | None = None
+    website: str | None = None

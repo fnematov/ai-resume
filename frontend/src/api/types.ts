@@ -144,6 +144,8 @@ export interface Organization {
   calendly_scheduling_url?: string | null
   retention_days?: number | null
   privacy_notice?: string | null
+  about?: string | null
+  website?: string | null
 }
 export interface OrganizationAdmin extends Organization {
   user_count: number

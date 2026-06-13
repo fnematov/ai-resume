@@ -41,6 +41,10 @@ class Organization(Base, TimestampMixin):
     calendly_scheduling_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     calendly_webhook_signing_key: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Company profile (shown to candidates with the vacancy)
+    about: Mapped[str | None] = mapped_column(Text, nullable=True)
+    website: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Branding (offer letters / messages)
     logo_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     brand_color: Mapped[str | None] = mapped_column(String(20), nullable=True)

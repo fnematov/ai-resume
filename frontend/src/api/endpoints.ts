@@ -64,6 +64,10 @@ export const orgApi = {
     })
     return data
   },
+  async setProfile(about: string | null, website: string | null) {
+    const { data } = await api.put<Organization>("/organizations/me/profile", { about, website })
+    return data
+  },
   async list(status?: OrgStatus) {
     const { data } = await api.get<OrganizationAdmin[]>("/organizations", {
       params: status ? { status_filter: status } : {},

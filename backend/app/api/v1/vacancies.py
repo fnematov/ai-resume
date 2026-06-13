@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.core.deps import get_current_org, get_org_user
+from app.core.utils import deep_link_token
 from app.models import Application, Organization, User, Vacancy, VacancyStatus
 from app.schemas.vacancy import VacancyCreate, VacancyOut, VacancyUpdate
 
@@ -58,10 +59,10 @@ async def create_vacancy(
         ai_instructions=payload.ai_instructions,
         status=payload.status,
     )
+    # Opaque, unguessable deep-link token (not the sequential id).
+    vacancy.deep_link_param = deep_link_token()
     db.add(vacancy)
     await db.flush()
-    # Deep-link payload is derived from the id once it exists.
-    vacancy.deep_link_param = f"job_{vacancy.id}"
     await db.commit()
     await db.refresh(vacancy)
     return await _to_out(vacancy, org, db)

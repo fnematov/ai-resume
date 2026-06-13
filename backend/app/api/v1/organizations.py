@@ -19,6 +19,7 @@ from app.schemas.organization import (
     OrganizationAdminOut,
     OrganizationOut,
     OrgStatusUpdate,
+    ProfileSettingsIn,
     TelegramSettingsIn,
 )
 from app.services.telegram import TelegramClient, TelegramError
@@ -67,6 +68,19 @@ async def set_telegram(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Bot saved but webhook registration failed: {exc}",
         )
+    await db.commit()
+    await db.refresh(org)
+    return org
+
+
+@router.put("/me/profile", response_model=OrganizationOut)
+async def set_profile(
+    payload: ProfileSettingsIn,
+    org: Organization = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    org.about = payload.about
+    org.website = payload.website
     await db.commit()
     await db.refresh(org)
     return org

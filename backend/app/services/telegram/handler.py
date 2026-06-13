@@ -1,3 +1,4 @@
+import html
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -96,12 +97,28 @@ def _vacancy_keyboard(vacancies: list[Vacancy]) -> dict:
 
 
 async def _prompt_for_vacancy(
-    client: TelegramClient, chat_id: int, vacancy: Vacancy, lang: str
+    client: TelegramClient, chat_id: int, vacancy: Vacancy, org: Organization, lang: str
 ) -> None:
-    await client.send_message(
-        chat_id,
-        f"{t(lang, 'applying_for', title=vacancy.title)}\n\n{t(lang, 'welcome')}",
-    )
+    """Send the full vacancy details + company profile, then ask for the resume."""
+    e = html.escape
+    lines = [f"<b>{e(vacancy.title)}</b>", f"🏢 {e(org.name)}"]
+    meta = []
+    if vacancy.location:
+        meta.append(f"📍 {e(vacancy.location)}")
+    if vacancy.employment_type:
+        meta.append(e(vacancy.employment_type))
+    if meta:
+        lines.append(" · ".join(meta))
+    if (vacancy.description or "").strip():
+        lines += ["", e(vacancy.description.strip()[:1500])]
+    if (vacancy.requirements or "").strip():
+        lines += ["", f"<b>{t(lang, 'job_requirements')}</b>", e(vacancy.requirements.strip()[:1200])]
+    if (org.about or "").strip():
+        lines += ["", f"<b>{t(lang, 'about_company', company=e(org.name))}</b>", e(org.about.strip()[:1000])]
+    if org.website:
+        lines.append(f"🔗 {e(org.website)}")
+    lines += ["", t(lang, "welcome")]
+    await client.send_message(chat_id, "\n".join(lines))
 
 
 async def _start_flow(
@@ -112,7 +129,7 @@ async def _start_flow(
         vacancy = await _vacancy_by_param(db, org.id, param)
         if vacancy:
             await set_selected_vacancy(org.id, chat_id, vacancy.id)
-            await _prompt_for_vacancy(client, chat_id, vacancy, lang)
+            await _prompt_for_vacancy(client, chat_id, vacancy, org, lang)
             return
         await client.send_message(chat_id, t(lang, "position_closed"))
     vacancies = await _open_vacancies(db, org.id)
@@ -221,7 +238,7 @@ async def handle_update(
         vacancy = await _vacancy_by_param(db, org.id, data)
         if vacancy:
             await set_selected_vacancy(org.id, chat_id, vacancy.id)
-            await _prompt_for_vacancy(client, chat_id, vacancy, lang)
+            await _prompt_for_vacancy(client, chat_id, vacancy, org, lang)
         else:
             await client.send_message(chat_id, t(lang, "position_closed"))
         return
