@@ -7,6 +7,7 @@ import { apiError } from "@/api/client"
 import { automationApi, templateApi } from "@/api/endpoints"
 import type { AutomationRule } from "@/api/types"
 import { useOrg } from "@/composables/useOrg"
+import PendingBanner from "@/components/PendingBanner.vue"
 import { Badge, Button, Card, CardContent, Input, Label, Modal, Spinner } from "@/components/ui"
 
 const qc = useQueryClient()
@@ -68,6 +69,8 @@ const hasRules = computed(() => (rules.value?.length ?? 0) > 0)
       </div>
       <Button :disabled="!isActive" @click="openNew"><Plus class="h-4 w-4" /> {{ $t("automation.new") }}</Button>
     </div>
+
+    <PendingBanner />
 
     <Card>
       <CardContent class="p-0">

@@ -7,6 +7,7 @@ import { apiError } from "@/api/client"
 import { templateApi } from "@/api/endpoints"
 import type { Template, TemplateType } from "@/api/types"
 import { useOrg } from "@/composables/useOrg"
+import PendingBanner from "@/components/PendingBanner.vue"
 import VariableTextarea from "@/components/VariableTextarea.vue"
 import { Badge, Button, Card, CardContent, Input, Label, Modal, Spinner } from "@/components/ui"
 
@@ -75,6 +76,8 @@ const remove = useMutation({
       </div>
       <Button :disabled="!isActive" @click="openNew"><Plus class="h-4 w-4" /> {{ $t("templates.new") }}</Button>
     </div>
+
+    <PendingBanner />
 
     <Card>
       <CardContent class="p-0">

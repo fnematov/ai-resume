@@ -6,6 +6,7 @@ import { ref } from "vue"
 import { apiError } from "@/api/client"
 import { vacancyApi } from "@/api/endpoints"
 import type { Vacancy, VacancyStatus } from "@/api/types"
+import PendingBanner from "@/components/PendingBanner.vue"
 import { useOrg } from "@/composables/useOrg"
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Spinner, Textarea,
@@ -61,6 +62,8 @@ function badge(v: Vacancy) {
       </div>
       <Button :disabled="!isActive" @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
     </div>
+
+    <PendingBanner />
 
     <Card v-if="showForm">
       <CardHeader><CardTitle>New vacancy</CardTitle></CardHeader>

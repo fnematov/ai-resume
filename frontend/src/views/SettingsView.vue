@@ -7,6 +7,7 @@ import { apiError } from "@/api/client"
 import { orgApi } from "@/api/endpoints"
 import CalendlyCard from "@/components/CalendlyCard.vue"
 import GdprCard from "@/components/GdprCard.vue"
+import PendingBanner from "@/components/PendingBanner.vue"
 import {
   Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Spinner,
 } from "@/components/ui"
@@ -69,6 +70,8 @@ function onProviderChange() {
       <h1 class="text-2xl font-bold tracking-tight">{{ $t("settings.title") }}</h1>
       <p class="text-muted-foreground">{{ $t("settings.subtitle") }}</p>
     </div>
+
+    <PendingBanner />
 
     <!-- Tabs -->
     <div class="flex gap-1 border-b">

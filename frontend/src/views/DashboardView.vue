@@ -4,6 +4,7 @@ import { Briefcase, CheckCircle2, FileText, Star } from "lucide-vue-next"
 import { computed } from "vue"
 
 import { analyticsApi } from "@/api/endpoints"
+import PendingBanner from "@/components/PendingBanner.vue"
 import StatCard from "@/components/StatCard.vue"
 import { useOrg } from "@/composables/useOrg"
 import { Badge, Card, CardContent, CardHeader, CardTitle, ScoreBar, Spinner } from "@/components/ui"
@@ -27,6 +28,8 @@ const maxBucket = computed(() =>
       <h1 class="text-2xl font-bold tracking-tight">{{ $t("dashboard.title") }}</h1>
       <p class="text-muted-foreground">{{ org?.name }}</p>
     </div>
+
+    <PendingBanner />
 
     <div v-if="isLoading" class="grid place-items-center py-20"><Spinner class="h-6 w-6" /></div>
 
