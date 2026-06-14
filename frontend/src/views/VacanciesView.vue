@@ -98,10 +98,12 @@ function applyDraft(d: VacancyDraft) {
         <p class="text-muted-foreground">{{ $t("vacancy.subtitle") }}</p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" :disabled="!isActive" @click="showAiChat = true">
+        <Button :disabled="!isActive" @click="showAiChat = true">
           <Sparkles class="h-4 w-4" /> {{ $t("aiVacancy.button") }}
         </Button>
-        <Button :disabled="!isActive" @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
+        <Button variant="outline" :disabled="!isActive" @click="showForm = !showForm">
+          <Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}
+        </Button>
       </div>
     </div>
 
