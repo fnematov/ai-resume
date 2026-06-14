@@ -46,7 +46,8 @@ export const messages = {
       thinking: "Yozyapti…",
       placeholder: "Javobingizni yozing…",
       draftReady: "Vakansiya loyihasi tayyor. Tasdiqlasangiz, forma to'ldiriladi.",
-      confirm: "Tasdiqlash",
+      draftPreview: "Tayyor vakansiya",
+      confirm: "Tasdiqlash va formaga o'tkazish",
       fillForm: "Formani to'ldirish",
     },
     account: {
@@ -360,7 +361,8 @@ export const messages = {
       thinking: "Печатает…",
       placeholder: "Введите ответ…",
       draftReady: "Черновик вакансии готов. Подтвердите — и форма заполнится.",
-      confirm: "Подтвердить",
+      draftPreview: "Готовая вакансия",
+      confirm: "Подтвердить и заполнить форму",
       fillForm: "Заполнить форму",
     },
     account: {

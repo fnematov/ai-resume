@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation } from "@tanstack/vue-query"
-import { RotateCcw, Send, Sparkles, X } from "lucide-vue-next"
+import { FileText, RotateCcw, Send, Sparkles, X } from "lucide-vue-next"
 import { nextTick, onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 
@@ -146,6 +146,34 @@ onMounted(() => {
           {{ m.content }}
         </div>
       </div>
+
+      <!-- Full draft preview, shown once the AI marks it ready -->
+      <div v-if="complete && latestDraft" class="space-y-3 rounded-2xl border bg-muted/40 p-4 text-sm">
+        <p class="flex items-center gap-1.5 font-semibold">
+          <FileText class="h-4 w-4 text-primary" /> {{ $t("aiVacancy.draftPreview") }}
+        </p>
+        <div v-if="latestDraft.title">
+          <p class="text-xs text-muted-foreground">{{ $t("vacancy.titleField") }}</p>
+          <p class="font-medium">{{ latestDraft.title }}</p>
+        </div>
+        <div v-if="latestDraft.employment_type || latestDraft.location" class="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+          <span v-if="latestDraft.employment_type">💼 {{ latestDraft.employment_type }}</span>
+          <span v-if="latestDraft.location">📍 {{ latestDraft.location }}</span>
+        </div>
+        <div v-if="latestDraft.description">
+          <p class="text-xs text-muted-foreground">{{ $t("vacancy.description") }}</p>
+          <p class="whitespace-pre-wrap">{{ latestDraft.description }}</p>
+        </div>
+        <div v-if="latestDraft.requirements">
+          <p class="text-xs text-muted-foreground">{{ $t("vacancy.requirements") }}</p>
+          <p class="whitespace-pre-wrap">{{ latestDraft.requirements }}</p>
+        </div>
+        <div v-if="latestDraft.ai_instructions">
+          <p class="text-xs text-muted-foreground">{{ $t("vacancy.aiInstructions") }}</p>
+          <p class="whitespace-pre-wrap">{{ latestDraft.ai_instructions }}</p>
+        </div>
+      </div>
+
       <div v-if="turn.isPending.value" class="flex justify-start">
         <div class="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2 text-sm text-muted-foreground">
           <Spinner class="h-4 w-4" /> {{ $t("aiVacancy.thinking") }}
@@ -166,9 +194,8 @@ onMounted(() => {
       </button>
     </div>
 
-    <!-- Draft ready -->
+    <!-- Confirm: apply the previewed draft to the form -->
     <div v-if="complete && latestDraft" class="shrink-0 border-t bg-primary/5 px-4 py-3">
-      <p class="mb-2 text-sm font-medium">{{ $t("aiVacancy.draftReady") }}</p>
       <Button class="w-full" @click="applyDraft">
         <Sparkles class="h-4 w-4" /> {{ $t("aiVacancy.confirm") }}
       </Button>
