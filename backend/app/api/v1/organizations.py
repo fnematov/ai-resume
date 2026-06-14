@@ -115,6 +115,10 @@ async def set_ai(
         )
     org.ai_provider = payload.provider
     org.ai_model = payload.model
+    if payload.language:
+        org.ai_language = payload.language
+    if payload.general_prompt is not None:
+        org.ai_general_prompt = payload.general_prompt.strip() or None
     await db.commit()
     await db.refresh(org)
     return org

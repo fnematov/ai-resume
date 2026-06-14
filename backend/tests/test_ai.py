@@ -18,15 +18,19 @@ def test_score_result_clamps_and_coerces():
 
     r2 = ScoreResult.from_payload({"match_percentage": -5})
     assert r2.match_percentage == 0
-    assert r2.matched_skills == []
+    assert r2.primary_skills == []
+
+    # Back-compat: an old payload with matched_skills maps onto primary_skills.
+    r3 = ScoreResult.from_payload({"match_percentage": 50, "matched_skills": ["php"]})
+    assert r3.primary_skills == ["php"]
 
 
 def test_score_result_roundtrip():
-    r = ScoreResult(match_percentage=80, matched_skills=["php"], missing_skills=["aws"])
+    r = ScoreResult(match_percentage=80, primary_skills=["php"], missing_skills=["aws"])
     d = r.to_dict()
     assert d["match_percentage"] == 80
-    assert d["matched_skills"] == ["php"]
-    assert set(d) >= {"verdict", "recommended", "strengths", "concerns", "summary"}
+    assert d["primary_skills"] == ["php"]
+    assert set(d) >= {"verdict", "recommended", "strengths", "concerns", "recommendation", "summary"}
 
 
 def test_build_system_prompt_includes_job_fields():

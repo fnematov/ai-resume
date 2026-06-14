@@ -139,6 +139,8 @@ export interface Organization {
   telegram_configured: boolean
   ai_provider: AIProviderName | null
   ai_model: string | null
+  ai_language?: string | null
+  ai_general_prompt?: string | null
   ai_configured: boolean
   calendly_configured?: boolean
   calendly_scheduling_url?: string | null
@@ -201,10 +203,13 @@ export interface AIResult {
   match_percentage: number
   verdict: string
   recommended: boolean
-  matched_skills: string[]
+  primary_skills: string[]
+  secondary_skills: string[]
+  matched_skills?: string[] // legacy results
   missing_skills: string[]
   strengths: string[]
   concerns: string[]
+  recommendation: string
   summary: string
 }
 

@@ -12,6 +12,8 @@ class OrganizationOut(BaseModel):
     telegram_configured: bool
     ai_provider: AIProvider | None
     ai_model: str | None
+    ai_language: str | None = None
+    ai_general_prompt: str | None = None
     ai_configured: bool
     calendly_configured: bool = False
     calendly_scheduling_url: str | None = None
@@ -39,6 +41,10 @@ class AISettingsIn(BaseModel):
     model: str = Field(min_length=2, max_length=120)
     # Optional on update: blank keeps the existing key (write-only).
     api_key: str | None = None
+    # Internal language for the AI's recruiter-facing analysis.
+    language: str | None = Field(default=None, max_length=8)
+    # Org-wide AI instructions applied to every evaluation. Empty string clears it.
+    general_prompt: str | None = Field(default=None, max_length=4000)
 
 
 class OrgStatusUpdate(BaseModel):

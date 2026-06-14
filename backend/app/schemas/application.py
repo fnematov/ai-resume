@@ -25,10 +25,14 @@ class AIResult(BaseModel):
     match_percentage: int
     verdict: str = ""
     recommended: bool = False
+    primary_skills: list[str] = []
+    secondary_skills: list[str] = []
+    # Back-compat for older stored results.
     matched_skills: list[str] = []
     missing_skills: list[str] = []
     strengths: list[str] = []
     concerns: list[str] = []
+    recommendation: str = ""
     summary: str = ""
 
 

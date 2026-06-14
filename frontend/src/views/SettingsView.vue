@@ -9,7 +9,7 @@ import CalendlyCard from "@/components/CalendlyCard.vue"
 import GdprCard from "@/components/GdprCard.vue"
 import PendingBanner from "@/components/PendingBanner.vue"
 import {
-  Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Spinner,
+  Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Spinner, Textarea,
 } from "@/components/ui"
 
 const tab = ref<"integrations" | "privacy">("integrations")
@@ -36,20 +36,22 @@ const saveTelegram = useMutation({
   onError: (e) => ((tgError.value = apiError(e)), (tgOk.value = false)),
 })
 
-const ai = ref({ provider: "claude", model: "claude-sonnet-4-6", api_key: "" })
+const ai = ref({ provider: "claude", model: "claude-sonnet-4-6", api_key: "", language: "uz", general_prompt: "" })
 // Pre-fill the non-secret AI fields from the saved org config (the key stays write-only).
 watch(
   org,
   (o) => {
     if (o?.ai_provider) ai.value.provider = o.ai_provider
     if (o?.ai_model) ai.value.model = o.ai_model
+    if (o?.ai_language) ai.value.language = o.ai_language
+    ai.value.general_prompt = o?.ai_general_prompt ?? ""
   },
   { immediate: true },
 )
 const aiError = ref("")
 const aiOk = ref(false)
 const saveAI = useMutation({
-  mutationFn: () => orgApi.setAI(ai.value.provider, ai.value.model, ai.value.api_key),
+  mutationFn: () => orgApi.setAI(ai.value.provider, ai.value.model, ai.value.api_key, ai.value.language, ai.value.general_prompt),
   onSuccess: () => {
     qc.invalidateQueries({ queryKey: ["org"] })
     ai.value.api_key = ""
@@ -144,6 +146,20 @@ function onProviderChange() {
             <Label>{{ $t("settings.apiKey") }}</Label>
             <Input v-model="ai.api_key" type="password" :placeholder="org?.ai_configured ? '•••••••• (saved)' : 'sk-…'" />
             <p v-if="org?.ai_configured" class="text-xs text-muted-foreground">{{ $t("settings.apiKeySaved") }}</p>
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("settings.aiLanguage") }}</Label>
+            <select v-model="ai.language" class="h-9 w-48 rounded-md border border-input bg-transparent px-3 text-sm">
+              <option value="uz">O'zbekcha</option>
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select>
+            <p class="text-xs text-muted-foreground">{{ $t("settings.aiLanguageHint") }}</p>
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("settings.aiGeneralPrompt") }}</Label>
+            <Textarea v-model="ai.general_prompt" :rows="4" :maxlength="4000" :placeholder="$t('settings.aiGeneralPromptPlaceholder')" />
+            <p class="text-xs text-muted-foreground">{{ $t("settings.aiGeneralPromptHint") }}</p>
           </div>
           <p v-if="aiError" class="text-sm text-destructive">{{ aiError }}</p>
           <p v-if="aiOk" class="text-sm text-green-600">{{ $t("settings.aiSaved") }}</p>

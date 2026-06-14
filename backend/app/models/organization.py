@@ -34,6 +34,10 @@ class Organization(Base, TimestampMixin):
     )
     ai_model: Mapped[str | None] = mapped_column(String(120), nullable=True)
     ai_api_key_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Internal language the AI writes its recruiter-facing analysis in (not shown to candidates).
+    ai_language: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    # Org-wide AI instructions applied to every candidate evaluation (complements per-vacancy rules).
+    ai_general_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Calendly scheduling (per org). Token stored encrypted at rest.
     calendly_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)

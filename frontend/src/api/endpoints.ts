@@ -63,8 +63,8 @@ export const orgApi = {
     const { data } = await api.put<Organization>("/organizations/me/telegram", { bot_token })
     return data
   },
-  async setAI(provider: string, model: string, api_key: string) {
-    const { data } = await api.put<Organization>("/organizations/me/ai", { provider, model, api_key })
+  async setAI(provider: string, model: string, api_key: string, language?: string, general_prompt?: string) {
+    const { data } = await api.put<Organization>("/organizations/me/ai", { provider, model, api_key, language, general_prompt })
     return data
   },
   async setGdpr(retention_days: number | null, privacy_notice: string | null) {

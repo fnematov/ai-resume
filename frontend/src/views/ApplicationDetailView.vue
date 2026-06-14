@@ -47,6 +47,9 @@ const rescore = useMutation({
 })
 
 const r = computed(() => app.value?.ai_result ?? null)
+// Primary falls back to the legacy `matched_skills` for results scored before the split.
+const primarySkills = computed(() => r.value?.primary_skills?.length ? r.value.primary_skills : (r.value?.matched_skills ?? []))
+const secondarySkills = computed(() => r.value?.secondary_skills ?? [])
 const resumeUrl = computed(() => applicationApi.resumeUrl(id.value))
 
 const tab = ref<"chat" | "timeline">("chat")
@@ -192,16 +195,30 @@ const ACTIONS = [
 
         <Card class="lg:col-span-2">
           <CardHeader><CardTitle>{{ $t("application.summary") }}</CardTitle></CardHeader>
-          <CardContent><p class="text-sm leading-relaxed">{{ r.summary }}</p></CardContent>
+          <CardContent class="space-y-3">
+            <p class="text-sm leading-relaxed">{{ r.summary }}</p>
+            <div v-if="r.recommendation" class="rounded-md border border-primary/30 bg-primary/5 p-3">
+              <p class="text-xs font-medium text-muted-foreground">{{ $t("application.recommendation") }}</p>
+              <p class="text-sm font-medium">{{ r.recommendation }}</p>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
       <div class="grid gap-6 sm:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle class="text-base text-green-700">{{ $t("application.matchedSkills") }}</CardTitle></CardHeader>
-          <CardContent class="flex flex-wrap gap-2">
-            <Badge v-for="s in r.matched_skills" :key="s" variant="success">{{ s }}</Badge>
-            <span v-if="!r.matched_skills.length" class="text-sm text-muted-foreground">None identified.</span>
+          <CardHeader><CardTitle class="text-base text-green-700">{{ $t("application.primarySkills") }}</CardTitle></CardHeader>
+          <CardContent class="space-y-3">
+            <div class="flex flex-wrap gap-2">
+              <Badge v-for="s in primarySkills" :key="s" variant="success">{{ s }}</Badge>
+              <span v-if="!primarySkills.length" class="text-sm text-muted-foreground">—</span>
+            </div>
+            <div v-if="secondarySkills.length">
+              <p class="mb-1 text-xs font-medium text-muted-foreground">{{ $t("application.secondarySkills") }}</p>
+              <div class="flex flex-wrap gap-2">
+                <Badge v-for="s in secondarySkills" :key="s" variant="secondary">{{ s }}</Badge>
+              </div>
+            </div>
           </CardContent>
         </Card>
         <Card>

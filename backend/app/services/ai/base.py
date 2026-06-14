@@ -36,10 +36,12 @@ class ScoreResult:
     match_percentage: int
     verdict: str = ""
     recommended: bool = False
-    matched_skills: list[str] = field(default_factory=list)
+    primary_skills: list[str] = field(default_factory=list)
+    secondary_skills: list[str] = field(default_factory=list)
     missing_skills: list[str] = field(default_factory=list)
     strengths: list[str] = field(default_factory=list)
     concerns: list[str] = field(default_factory=list)
+    recommendation: str = ""
     summary: str = ""
 
     def to_dict(self) -> dict:
@@ -47,10 +49,12 @@ class ScoreResult:
             "match_percentage": self.match_percentage,
             "verdict": self.verdict,
             "recommended": self.recommended,
-            "matched_skills": self.matched_skills,
+            "primary_skills": self.primary_skills,
+            "secondary_skills": self.secondary_skills,
             "missing_skills": self.missing_skills,
             "strengths": self.strengths,
             "concerns": self.concerns,
+            "recommendation": self.recommendation,
             "summary": self.summary,
         }
 
@@ -58,14 +62,18 @@ class ScoreResult:
     def from_payload(cls, payload: dict) -> "ScoreResult":
         pct = int(round(float(payload.get("match_percentage", 0))))
         pct = max(0, min(100, pct))
+        # Back-compat: older payloads used a single "matched_skills" list.
+        primary = payload.get("primary_skills") or payload.get("matched_skills") or []
         return cls(
             match_percentage=pct,
             verdict=str(payload.get("verdict", "")),
             recommended=bool(payload.get("recommended", False)),
-            matched_skills=[str(x) for x in payload.get("matched_skills", []) or []],
+            primary_skills=[str(x) for x in primary],
+            secondary_skills=[str(x) for x in payload.get("secondary_skills", []) or []],
             missing_skills=[str(x) for x in payload.get("missing_skills", []) or []],
             strengths=[str(x) for x in payload.get("strengths", []) or []],
             concerns=[str(x) for x in payload.get("concerns", []) or []],
+            recommendation=str(payload.get("recommendation", "")),
             summary=str(payload.get("summary", "")),
         )
 
@@ -89,23 +97,42 @@ SCORE_JSON_SCHEMA: dict = {
             "type": "boolean",
             "description": "Whether this candidate should advance.",
         },
-        "matched_skills": {"type": "array", "items": {"type": "string"}},
-        "missing_skills": {"type": "array", "items": {"type": "string"}},
+        "primary_skills": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Core/primary required skills the candidate clearly HAS (heavily weighted).",
+        },
+        "secondary_skills": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Secondary / nice-to-have or supporting skills the candidate has (lightly weighted).",
+        },
+        "missing_skills": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Required skills the candidate is missing. Note which are learnable vs critical.",
+        },
         "strengths": {"type": "array", "items": {"type": "string"}},
         "concerns": {"type": "array", "items": {"type": "string"}},
+        "recommendation": {
+            "type": "string",
+            "description": "One actionable hiring recommendation for the recruiter, e.g. 'Interview — strong PHP base, Laravel is learnable'.",
+        },
         "summary": {
             "type": "string",
-            "description": "2-4 sentences explaining the score and the decision.",
+            "description": "2-5 sentences justifying the score: transferable skills, learnability, experience and seniority.",
         },
     },
     "required": [
         "match_percentage",
         "verdict",
         "recommended",
-        "matched_skills",
+        "primary_skills",
+        "secondary_skills",
         "missing_skills",
         "strengths",
         "concerns",
+        "recommendation",
         "summary",
     ],
 }
@@ -120,9 +147,10 @@ def _language_instruction(language: str | None) -> str:
     if not name or language in (None, "en"):
         return ""
     return (
-        f"\n\nIMPORTANT: Write the `verdict`, `summary`, `strengths`, `concerns`, `matched_skills` "
-        f"and `missing_skills` fields in {name}. Keep technology names, tools, frameworks and other "
-        f"proper nouns in their original form (e.g. PHP, Laravel, AWS, React)."
+        f"\n\nIMPORTANT: Write the `verdict`, `summary`, `recommendation`, `strengths`, `concerns`, "
+        f"`primary_skills`, `secondary_skills` and `missing_skills` fields in {name}. Keep technology "
+        f"names, tools, frameworks and other proper nouns in their original form (e.g. PHP, Laravel, "
+        f"AWS, React)."
     )
 
 
@@ -235,15 +263,38 @@ def build_vacancy_system_prompt(
     )
 
 
-def build_system_prompt(job: JobSpec, language: str | None = None) -> str:
+def build_system_prompt(
+    job: JobSpec, language: str | None = None, general_prompt: str | None = None
+) -> str:
     parts = [
-        "You are an expert technical recruiter screening candidates for a specific job.",
-        "Evaluate the candidate's application (resume, and a cover letter if one is provided) "
-        "STRICTLY against the job below.",
-        "Be objective and evidence-based: base the score only on what the materials show. "
-        "A strong, relevant cover letter can raise the score; a generic or missing one should not "
-        "by itself lower it below what the resume warrants.",
-        "If a required skill is absent, list it in missing_skills and lower the score accordingly.",
+        "You are an expert technical recruiter screening a candidate for a specific job. "
+        "Evaluate the application (resume + cover letter if present) against the job below and "
+        "return a thoughtful, evidence-based assessment.",
+        "",
+        "How to evaluate — think like a smart hiring manager, not a keyword matcher:",
+        "1. PRIMARY vs SECONDARY. Decide which requirements are PRIMARY (the core foundation the "
+        "role is built on — e.g. the main programming language, core domain, seniority) and which "
+        "are SECONDARY (specific frameworks, libraries, tools, or nice-to-haves that a strong "
+        "person can pick up). Weight PRIMARY matches heavily and SECONDARY matches lightly when "
+        "computing match_percentage.",
+        "2. INFER beyond the literal text. A skill the candidate never lists may still be evident "
+        "from their projects, responsibilities, job titles or years of work. Credit demonstrated "
+        "ability, not just explicitly named keywords.",
+        "3. TRANSFERABILITY & LEARNABILITY. If the candidate has the primary foundation but lacks a "
+        "secondary tool, judge how easily they can learn it given their experience and seniority. "
+        "Same language / different framework (e.g. strong PHP with Yii2 vs a Laravel requirement), "
+        "or a comparable database (MySQL vs PostgreSQL), is a small, learnable gap — do NOT treat "
+        "it like missing the core language. A senior engineer with many years of experience "
+        "learns a new framework quickly; weigh this as potential, not a disqualifier.",
+        "4. CONTEXT. Factor in total years of experience, seniority and trajectory (and age if "
+        "evident) when judging potential and learnability.",
+        "",
+        "Then: put the matched core skills in `primary_skills`, supporting ones in "
+        "`secondary_skills`, and genuinely absent required skills in `missing_skills` (noting in "
+        "the summary which gaps are learnable). Give one actionable `recommendation` for the "
+        "recruiter, and in `summary` justify the score — explicitly explaining transferable "
+        "skills, learnable gaps, experience and seniority. A strong cover letter can raise the "
+        "score; a generic or missing one should not by itself lower it.",
         "",
         f"# Job title\n{job.title}",
     ]
@@ -255,27 +306,37 @@ def build_system_prompt(job: JobSpec, language: str | None = None) -> str:
         parts.append(f"\n# Job description\n{job.description.strip()}")
     if job.requirements.strip():
         parts.append(f"\n# Requirements / must-haves\n{job.requirements.strip()}")
+    if general_prompt and general_prompt.strip():
+        parts.append(
+            "\n# Organization-wide AI instructions (apply to EVERY candidate)\n"
+            f"{general_prompt.strip()}"
+        )
     if job.ai_instructions and job.ai_instructions.strip():
         parts.append(
             "\n# Additional rules from the recruiter (MUST be strictly followed)\n"
             f"{job.ai_instructions.strip()}"
         )
     parts.append(
-        "\nReturn ONLY the structured result via the provided schema. "
-        "match_percentage must reflect overall fit (skills, experience, seniority)."
+        "\nReturn ONLY the structured result via the provided schema. match_percentage must "
+        "reflect overall fit with PRIMARY requirements weighted most, then secondary, then "
+        "learnability/potential."
         + _language_instruction(language)
     )
     return "\n".join(parts)
 
 
 def build_submission_prompt(
-    job: JobSpec, instructions: str, criteria: str, language: str | None = None
+    job: JobSpec,
+    instructions: str,
+    criteria: str,
+    language: str | None = None,
+    general_prompt: str | None = None,
 ) -> str:
     parts = [
         "You are a senior engineer grading a candidate's submitted test task.",
         "Evaluate the submission STRICTLY and fairly against the task and the grading criteria.",
         "match_percentage is the overall quality/correctness score (0-100).",
-        "Put what the submission did well in `strengths` and `matched_skills`, and problems or "
+        "Put what the submission did well in `strengths` and `primary_skills`, and problems or "
         "gaps in `concerns` and `missing_skills`. Give a concise justification in `summary`.",
         "",
         f"# Role being hired for\n{job.title}",
@@ -284,6 +345,11 @@ def build_submission_prompt(
         parts.append(f"\n# Test task given to the candidate\n{instructions.strip()}")
     if criteria.strip():
         parts.append(f"\n# Grading criteria\n{criteria.strip()}")
+    if general_prompt and general_prompt.strip():
+        parts.append(
+            "\n# Organization-wide AI instructions (apply to EVERY candidate)\n"
+            f"{general_prompt.strip()}"
+        )
     parts.append(
         "\nReturn ONLY the structured result via the provided schema."
         + _language_instruction(language)
@@ -329,9 +395,13 @@ class AIProvider(ABC):
         )
 
     async def score_resume(
-        self, job: JobSpec, document: ResumeDocument, language: str | None = None
+        self,
+        job: JobSpec,
+        document: ResumeDocument,
+        language: str | None = None,
+        general_prompt: str | None = None,
     ) -> ScoreResult:
-        return await self._assess(build_system_prompt(job, language), document)
+        return await self._assess(build_system_prompt(job, language, general_prompt), document)
 
     async def evaluate_submission(
         self,
@@ -340,7 +410,8 @@ class AIProvider(ABC):
         instructions: str,
         criteria: str,
         language: str | None = None,
+        general_prompt: str | None = None,
     ) -> ScoreResult:
         return await self._assess(
-            build_submission_prompt(job, instructions, criteria, language), document
+            build_submission_prompt(job, instructions, criteria, language, general_prompt), document
         )
