@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
-import { Copy, ImagePlus, LayoutGrid, Upload, X } from "lucide-vue-next"
+import { Copy, ImagePlus, LayoutGrid, Pencil, Upload, X } from "lucide-vue-next"
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import { apiError } from "@/api/client"
 import { applicationApi, vacancyApi } from "@/api/endpoints"
-import type { ApplicationStatus } from "@/api/types"
-import { Badge, Button, Card, CardContent, ScoreBar, Spinner } from "@/components/ui"
+import type { ApplicationStatus, VacancyStatus } from "@/api/types"
+import { Badge, Button, Card, CardContent, Input, Label, ScoreBar, Spinner, Textarea } from "@/components/ui"
 import { formatDate } from "@/lib/utils"
 
 const route = useRoute()
@@ -96,6 +96,58 @@ function onImage(e: Event) {
   }
 }
 
+// --- Vacancy info editing ---
+const editing = ref(false)
+const editError = ref("")
+const editForm = ref({
+  title: "",
+  employment_type: "",
+  location: "",
+  description: "",
+  requirements: "",
+  ai_instructions: "",
+  status: "open" as VacancyStatus,
+})
+function startEdit() {
+  const v = vacancy.value
+  if (!v) return
+  editForm.value = {
+    title: v.title,
+    employment_type: v.employment_type ?? "",
+    location: v.location ?? "",
+    description: v.description ?? "",
+    requirements: v.requirements ?? "",
+    ai_instructions: v.ai_instructions ?? "",
+    status: v.status,
+  }
+  editError.value = ""
+  editing.value = true
+}
+const saveEdit = useMutation({
+  mutationFn: () =>
+    vacancyApi.update(id.value, {
+      title: editForm.value.title,
+      employment_type: editForm.value.employment_type || null,
+      location: editForm.value.location || null,
+      description: editForm.value.description,
+      requirements: editForm.value.requirements,
+      ai_instructions: editForm.value.ai_instructions || null,
+      status: editForm.value.status,
+    }),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ["vacancy", id] })
+    qc.invalidateQueries({ queryKey: ["vacancies"] })
+    editing.value = false
+  },
+  onError: (e) => (editError.value = apiError(e)),
+})
+
+const vacancyStatusVariant: Record<VacancyStatus, "success" | "secondary" | "muted"> = {
+  open: "success",
+  draft: "secondary",
+  closed: "muted",
+}
+
 const statusVariant: Record<ApplicationStatus, "success" | "warning" | "muted" | "destructive"> = {
   scored: "success",
   processing: "warning",
@@ -120,6 +172,86 @@ const statusVariant: Record<ApplicationStatus, "success" | "warning" | "muted" |
         </Button>
       </div>
     </div>
+
+    <!-- Vacancy details + inline edit -->
+    <Card>
+      <CardContent class="p-5">
+        <!-- Read-only view -->
+        <div v-if="!editing" class="space-y-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span v-if="vacancy?.employment_type" class="flex items-center gap-1">💼 {{ vacancy.employment_type }}</span>
+              <span v-if="vacancy?.location" class="flex items-center gap-1">📍 {{ vacancy.location }}</span>
+              <Badge v-if="vacancy" :variant="vacancyStatusVariant[vacancy.status]">{{ vacancy.status }}</Badge>
+            </div>
+            <Button variant="outline" size="sm" @click="startEdit">
+              <Pencil class="h-4 w-4" /> {{ $t("common.edit") }}
+            </Button>
+          </div>
+          <div v-if="vacancy?.description" class="space-y-1">
+            <p class="text-xs font-medium text-muted-foreground">{{ $t("vacancy.description") }}</p>
+            <p class="whitespace-pre-wrap text-sm">{{ vacancy.description }}</p>
+          </div>
+          <div v-if="vacancy?.requirements" class="space-y-1">
+            <p class="text-xs font-medium text-muted-foreground">{{ $t("vacancy.requirements") }}</p>
+            <p class="whitespace-pre-wrap text-sm">{{ vacancy.requirements }}</p>
+          </div>
+          <div v-if="vacancy?.ai_instructions" class="space-y-1">
+            <p class="text-xs font-medium text-muted-foreground">{{ $t("vacancy.aiInstructions") }}</p>
+            <p class="whitespace-pre-wrap text-sm">{{ vacancy.ai_instructions }}</p>
+          </div>
+          <p v-if="vacancy && !vacancy.description && !vacancy.requirements" class="text-sm text-muted-foreground">
+            {{ $t("vacancy.noDescription") }}
+          </p>
+        </div>
+
+        <!-- Edit form -->
+        <form v-else class="space-y-4" @submit.prevent="saveEdit.mutate()">
+          <div class="space-y-2">
+            <Label>{{ $t("vacancy.titleField") }}</Label>
+            <Input v-model="editForm.title" />
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <Label>{{ $t("vacancy.employmentType") }}</Label>
+              <Input v-model="editForm.employment_type" placeholder="Full-time" />
+            </div>
+            <div class="space-y-2">
+              <Label>{{ $t("vacancy.location") }}</Label>
+              <Input v-model="editForm.location" placeholder="Remote" />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("vacancy.description") }}</Label>
+            <Textarea v-model="editForm.description" :rows="3" />
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("vacancy.requirements") }}</Label>
+            <Textarea v-model="editForm.requirements" :rows="3" />
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("vacancy.aiInstructions") }}</Label>
+            <Textarea v-model="editForm.ai_instructions" :rows="3" />
+            <p class="text-xs text-muted-foreground">{{ $t("vacancy.aiInstructionsHint") }}</p>
+          </div>
+          <div class="space-y-2">
+            <Label>{{ $t("common.status") }}</Label>
+            <select v-model="editForm.status" class="h-9 w-40 rounded-md border border-input bg-transparent px-3 text-sm">
+              <option value="open">{{ $t("vacancyStatus.open") }}</option>
+              <option value="draft">{{ $t("vacancyStatus.draft") }}</option>
+              <option value="closed">{{ $t("vacancyStatus.closed") }}</option>
+            </select>
+          </div>
+          <p v-if="editError" class="text-sm text-destructive">{{ editError }}</p>
+          <div class="flex gap-2">
+            <Button type="submit" :disabled="saveEdit.isPending.value || editForm.title.length < 2">
+              <Spinner v-if="saveEdit.isPending.value" /> {{ $t("common.save") }}
+            </Button>
+            <Button type="button" variant="ghost" @click="editing = false">{{ $t("common.cancel") }}</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
 
     <!-- Telegram link -->
     <Card>

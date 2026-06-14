@@ -52,5 +52,5 @@ class GdprSettingsIn(BaseModel):
 
 class ProfileSettingsIn(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=160)
-    about: str | None = None
-    website: str | None = None
+    about: str | None = Field(default=None, max_length=512)
+    website: str | None = Field(default=None, max_length=255)

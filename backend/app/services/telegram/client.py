@@ -1,3 +1,5 @@
+import json
+
 import httpx
 
 API_BASE = "https://api.telegram.org"
@@ -71,12 +73,19 @@ class TelegramClient:
             return payload["result"]
 
     async def send_photo(
-        self, chat_id: int, image_bytes: bytes, filename: str = "image", caption: str | None = None
+        self,
+        chat_id: int,
+        image_bytes: bytes,
+        filename: str = "image",
+        caption: str | None = None,
+        reply_markup: dict | None = None,
     ) -> dict:
         data: dict = {"chat_id": str(chat_id)}
         if caption:
             data["caption"] = caption
             data["parse_mode"] = "HTML"
+        if reply_markup:
+            data["reply_markup"] = json.dumps(reply_markup)
         files = {"photo": (filename, image_bytes)}
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(f"{self._api}/sendPhoto", data=data, files=files)

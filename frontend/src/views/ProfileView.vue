@@ -74,8 +74,13 @@ const changePw = useMutation({
           <Input v-model="form.name" class="max-w-md" />
         </div>
         <div class="space-y-2">
-          <Label>{{ $t("profile.about") }}</Label>
-          <Textarea v-model="form.about" :rows="4" :placeholder="$t('profile.aboutPlaceholder')" />
+          <div class="flex items-center justify-between">
+            <Label>{{ $t("profile.about") }}</Label>
+            <span class="text-xs text-muted-foreground" :class="{ 'text-destructive': form.about.length > 512 }">
+              {{ form.about.length }}/512
+            </span>
+          </div>
+          <Textarea v-model="form.about" :rows="4" :maxlength="512" :placeholder="$t('profile.aboutPlaceholder')" />
         </div>
         <div class="space-y-2">
           <Label>{{ $t("profile.website") }}</Label>
@@ -83,7 +88,7 @@ const changePw = useMutation({
         </div>
         <p v-if="profErr" class="text-sm text-destructive">{{ profErr }}</p>
         <p v-if="profOk" class="text-sm text-green-600">{{ $t("profile.saved") }}</p>
-        <Button :disabled="saveProfile.isPending.value || !isActive || form.name.length < 2" @click="saveProfile.mutate()">
+        <Button :disabled="saveProfile.isPending.value || !isActive || form.name.length < 2 || form.about.length > 512" @click="saveProfile.mutate()">
           <Spinner v-if="saveProfile.isPending.value" /> {{ $t("common.save") }}
         </Button>
       </CardContent>

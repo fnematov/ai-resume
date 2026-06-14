@@ -101,32 +101,51 @@ def _vacancy_keyboard(vacancies: list[Vacancy]) -> dict:
     }
 
 
+def _website_url(raw: str | None) -> str | None:
+    """Normalise a stored website into a clickable URL (adds https:// if missing)."""
+    if not raw or not raw.strip():
+        return None
+    url = raw.strip()
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    return url
+
+
 async def _prompt_for_vacancy(
     client: TelegramClient, chat_id: int, vacancy: Vacancy, org: Organization, lang: str
 ) -> None:
-    """Send the full vacancy details + company profile, then ask for the resume.
+    """Send the vacancy details + company profile, then ask for the resume.
 
-    When the vacancy has a banner image, everything goes out as a single Telegram
-    message: a photo with the text as its caption.
+    With a banner image, everything goes out as a single message (photo + caption).
+    A clickable website button is attached when the company has a website.
     """
     e = html.escape
-    lines = [f"<b>{e(vacancy.title)}</b>", f"🏢 {e(org.name)}"]
+    lines = [f"💼 <b>{e(vacancy.title)}</b>", f"🏢 {e(org.name)}"]
     meta = []
     if vacancy.location:
         meta.append(f"📍 {e(vacancy.location)}")
     if vacancy.employment_type:
-        meta.append(e(vacancy.employment_type))
+        meta.append(f"🕒 {e(vacancy.employment_type)}")
     if meta:
-        lines.append(" · ".join(meta))
+        lines.append("   ".join(meta))
     if (vacancy.description or "").strip():
-        lines += ["", e(vacancy.description.strip()[:1500])]
+        lines += ["", f"📝 <b>{t(lang, 'job_description')}</b>", e(vacancy.description.strip()[:1500])]
     if (vacancy.requirements or "").strip():
-        lines += ["", f"<b>{t(lang, 'job_requirements')}</b>", e(vacancy.requirements.strip()[:1200])]
+        lines += ["", f"✅ <b>{t(lang, 'job_requirements')}</b>", e(vacancy.requirements.strip()[:1200])]
     if (org.about or "").strip():
-        lines += ["", f"<b>{t(lang, 'about_company', company=e(org.name))}</b>", e(org.about.strip()[:1000])]
-    if org.website:
-        lines.append(f"🔗 {e(org.website)}")
-    lines += ["", t(lang, "welcome")]
+        lines += ["", f"ℹ️ <b>{t(lang, 'about_company', company=e(org.name))}</b>", e(org.about.strip()[:1000])]
+    website = _website_url(org.website)
+    if website:
+        lines += ["", f"🌐 <a href=\"{e(website)}\">{e(org.website.strip())}</a>"]
+    lines += ["", f"➡️ {t(lang, 'welcome')}"]
+
+    # An interactive website button — it lives outside the 1024-char caption budget,
+    # so the candidate can always reach the site even if the caption gets trimmed.
+    reply_markup = (
+        {"inline_keyboard": [[{"text": f"🌐 {t(lang, 'visit_website')}", "url": website}]]}
+        if website
+        else None
+    )
 
     # With an image, send photo + caption as one message. Telegram caps photo
     # captions at 1024 chars, so fit whole lines (keeping HTML tags balanced) and
@@ -152,13 +171,17 @@ async def _prompt_for_vacancy(
                     break
                 caption = "\n".join([*kept, cta])
             await client.send_photo(
-                chat_id, read_file(vacancy.image_path), filename="vacancy", caption=caption
+                chat_id,
+                read_file(vacancy.image_path),
+                filename="vacancy",
+                caption=caption,
+                reply_markup=reply_markup,
             )
             return
         except Exception:
             pass  # fall back to a plain text message below
 
-    await client.send_message(chat_id, "\n".join(lines))
+    await client.send_message(chat_id, "\n".join(lines), reply_markup=reply_markup)
 
 
 async def _start_flow(
