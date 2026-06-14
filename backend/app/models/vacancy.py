@@ -26,6 +26,8 @@ class Vacancy(Base, TimestampMixin):
     location: Mapped[str | None] = mapped_column(String(160), nullable=True)
     # Optional extra instructions / strict rules appended to the AI scoring prompt.
     ai_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Optional banner image, sent to candidates over Telegram with the vacancy info.
+    image_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     status: Mapped[VacancyStatus] = mapped_column(
         SAEnum(VacancyStatus, name="vacancy_status"), default=VacancyStatus.draft, nullable=False
     )

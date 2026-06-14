@@ -6,7 +6,6 @@ import { ref, watch } from "vue"
 import { apiError } from "@/api/client"
 import { orgApi } from "@/api/endpoints"
 import CalendlyCard from "@/components/CalendlyCard.vue"
-import CompanyProfileCard from "@/components/CompanyProfileCard.vue"
 import GdprCard from "@/components/GdprCard.vue"
 import PendingBanner from "@/components/PendingBanner.vue"
 import {
@@ -68,7 +67,6 @@ function onProviderChange() {
 <template>
   <div class="space-y-6 max-w-2xl">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">{{ $t("settings.title") }}</h1>
       <p class="text-muted-foreground">{{ $t("settings.subtitle") }}</p>
     </div>
 
@@ -89,9 +87,6 @@ function onProviderChange() {
 
     <!-- Integrations tab -->
     <div v-show="tab === 'integrations'" class="space-y-6">
-    <!-- Company profile -->
-    <CompanyProfileCard />
-
     <!-- Telegram -->
     <Card>
       <CardHeader>

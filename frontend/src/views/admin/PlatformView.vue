@@ -12,7 +12,6 @@ const { data, isLoading } = useQuery({ queryKey: ["platform"], queryFn: analytic
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">{{ $t("admin.platformTitle") }}</h1>
       <p class="text-muted-foreground">{{ $t("admin.platformSubtitle") }}</p>
     </div>
     <div v-if="isLoading" class="grid place-items-center py-20"><Spinner class="h-6 w-6" /></div>

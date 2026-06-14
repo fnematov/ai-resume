@@ -1,14 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.db import get_db
 from app.core.deps import get_current_org, get_org_user
 from app.core.utils import deep_link_token
 from app.models import Application, Organization, User, Vacancy, VacancyStatus
 from app.schemas.vacancy import VacancyCreate, VacancyOut, VacancyUpdate
+from app.services.storage import delete_file, file_exists, read_file, save_image
 
 router = APIRouter()
+
+_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
 
 
 def _deep_link_url(org: Organization, vacancy: Vacancy) -> str | None:
@@ -24,6 +34,7 @@ async def _to_out(vacancy: Vacancy, org: Organization, db: AsyncSession) -> Vaca
     out = VacancyOut.model_validate(vacancy)
     out.application_count = count or 0
     out.deep_link_url = _deep_link_url(org, vacancy)
+    out.has_image = bool(vacancy.image_path)
     return out
 
 
@@ -109,5 +120,62 @@ async def delete_vacancy(
     db: AsyncSession = Depends(get_db),
 ):
     vacancy = await _get_owned(vacancy_id, user, db)
+    delete_file(vacancy.image_path)
     await db.delete(vacancy)
     await db.commit()
+
+
+@router.put("/{vacancy_id}/image", response_model=VacancyOut)
+async def set_vacancy_image(
+    vacancy_id: int,
+    file: UploadFile = File(...),
+    user: User = Depends(get_org_user),
+    org: Organization = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    vacancy = await _get_owned(vacancy_id, user, db)
+    if file.content_type not in _IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported image type. Use JPEG, PNG, WEBP or GIF.",
+        )
+    data = await file.read()
+    if len(data) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Image too large")
+    old = vacancy.image_path
+    vacancy.image_path = save_image(user.org_id, data, file.filename)
+    await db.commit()
+    await db.refresh(vacancy)
+    if old:
+        delete_file(old)
+    return await _to_out(vacancy, org, db)
+
+
+@router.delete("/{vacancy_id}/image", response_model=VacancyOut)
+async def delete_vacancy_image(
+    vacancy_id: int,
+    user: User = Depends(get_org_user),
+    org: Organization = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    vacancy = await _get_owned(vacancy_id, user, db)
+    delete_file(vacancy.image_path)
+    vacancy.image_path = None
+    await db.commit()
+    await db.refresh(vacancy)
+    return await _to_out(vacancy, org, db)
+
+
+@router.get("/{vacancy_id}/image")
+async def get_vacancy_image(
+    vacancy_id: int,
+    user: User = Depends(get_org_user),
+    db: AsyncSession = Depends(get_db),
+):
+    vacancy = await _get_owned(vacancy_id, user, db)
+    if not vacancy.image_path or not file_exists(vacancy.image_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No image")
+    data = read_file(vacancy.image_path)
+    suffix = vacancy.image_path.rsplit(".", 1)[-1].lower()
+    media = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif"}.get(suffix, "application/octet-stream")
+    return Response(content=data, media_type=media)

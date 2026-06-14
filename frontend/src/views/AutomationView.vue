@@ -64,7 +64,6 @@ const hasRules = computed(() => (rules.value?.length ?? 0) > 0)
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight">{{ $t("automation.title") }}</h1>
         <p class="text-muted-foreground">{{ $t("automation.subtitle") }}</p>
       </div>
       <Button :disabled="!isActive" @click="openNew"><Plus class="h-4 w-4" /> {{ $t("automation.new") }}</Button>

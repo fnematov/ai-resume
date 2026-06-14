@@ -70,6 +70,21 @@ class TelegramClient:
                 raise TelegramError(f"sendDocument failed: {payload.get('description')}")
             return payload["result"]
 
+    async def send_photo(
+        self, chat_id: int, image_bytes: bytes, filename: str = "image", caption: str | None = None
+    ) -> dict:
+        data: dict = {"chat_id": str(chat_id)}
+        if caption:
+            data["caption"] = caption
+            data["parse_mode"] = "HTML"
+        files = {"photo": (filename, image_bytes)}
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            resp = await client.post(f"{self._api}/sendPhoto", data=data, files=files)
+            payload = resp.json()
+            if not payload.get("ok"):
+                raise TelegramError(f"sendPhoto failed: {payload.get('description')}")
+            return payload["result"]
+
     async def answer_callback_query(self, callback_query_id: str, text: str | None = None) -> dict:
         payload: dict = {"callback_query_id": callback_query_id}
         if text:

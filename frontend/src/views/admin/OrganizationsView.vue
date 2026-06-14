@@ -23,7 +23,6 @@ const variant: Record<OrgStatus, "success" | "warning" | "destructive"> = {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">{{ $t("admin.orgsTitle") }}</h1>
       <p class="text-muted-foreground">{{ $t("admin.orgsSubtitle") }}</p>
     </div>
 

@@ -165,6 +165,7 @@ export interface Vacancy {
   deep_link_param: string | null
   deep_link_url: string | null
   application_count: number
+  has_image: boolean
 }
 
 export interface Candidate {

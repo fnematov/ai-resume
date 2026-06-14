@@ -1,31 +1,48 @@
 <script setup lang="ts">
-import { useMutation, useQuery } from "@tanstack/vue-query"
-import { computed, ref } from "vue"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
+import { ref, watch } from "vue"
 
 import { apiError } from "@/api/client"
 import { authApi, orgApi } from "@/api/endpoints"
 import {
-  Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Spinner,
+  Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Input, Label, Spinner, Textarea,
 } from "@/components/ui"
 import { useAuthStore } from "@/stores/auth"
+import { useOrg } from "@/composables/useOrg"
 
 const auth = useAuthStore()
+const qc = useQueryClient()
+const { isActive } = useOrg()
 
-// --- Edit name ---
-const fullName = ref(auth.user?.full_name ?? "")
-const nameOk = ref(false)
-const nameErr = ref("")
-const saveName = useMutation({
-  mutationFn: () => authApi.updateMe(fullName.value),
-  onSuccess: (u) => {
-    auth.user = u
-    nameOk.value = true
-    nameErr.value = ""
+// --- Company profile (org users only) ---
+const { data: org } = useQuery({ queryKey: ["org"], queryFn: orgApi.me, enabled: auth.isOrgUser })
+const form = ref({ name: "", about: "", website: "" })
+const profOk = ref(false)
+const profErr = ref("")
+watch(
+  org,
+  (o) => {
+    if (o) form.value = { name: o.name ?? "", about: o.about ?? "", website: o.website ?? "" }
   },
-  onError: (e) => ((nameErr.value = apiError(e)), (nameOk.value = false)),
+  { immediate: true },
+)
+const saveProfile = useMutation({
+  mutationFn: () =>
+    orgApi.setProfile({
+      name: form.value.name,
+      about: form.value.about || null,
+      website: form.value.website || null,
+    }),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ["org"] })
+    profOk.value = true
+    profErr.value = ""
+  },
+  onError: (e) => ((profErr.value = apiError(e)), (profOk.value = false)),
 })
 
-// --- Change password ---
+// --- Change password (all users) ---
 const pw = ref({ old: "", new_: "" })
 const pwOk = ref(false)
 const pwErr = ref("")
@@ -38,53 +55,46 @@ const changePw = useMutation({
   },
   onError: (e) => ((pwErr.value = apiError(e)), (pwOk.value = false)),
 })
-
-const { data: org } = useQuery({
-  queryKey: ["org"],
-  queryFn: orgApi.me,
-  enabled: computed(() => auth.isOrgUser),
-})
 </script>
 
 <template>
   <div class="max-w-2xl space-y-6">
-    <h1 class="text-2xl font-bold tracking-tight">{{ $t("account.title") }}</h1>
-
-    <!-- Account info -->
-    <Card>
-      <CardHeader><CardTitle>{{ $t("account.info") }}</CardTitle></CardHeader>
+    <!-- Company profile -->
+    <Card v-if="auth.isOrgUser">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          {{ $t("profile.title") }}
+          <Badge v-if="org" :variant="org.status === 'active' ? 'success' : 'warning'">{{ org.status }}</Badge>
+        </CardTitle>
+        <CardDescription>{{ $t("profile.hint") }}</CardDescription>
+      </CardHeader>
       <CardContent class="space-y-4">
         <div class="space-y-2">
-          <Label>{{ $t("account.fullName") }}</Label>
-          <div class="flex gap-2">
-            <Input v-model="fullName" class="flex-1" />
-            <Button :disabled="saveName.isPending.value || !fullName" @click="saveName.mutate()">
-              <Spinner v-if="saveName.isPending.value" /> {{ $t("common.save") }}
-            </Button>
-          </div>
-          <p v-if="nameErr" class="text-sm text-destructive">{{ nameErr }}</p>
-          <p v-if="nameOk" class="text-sm text-green-600">{{ $t("account.saved") }}</p>
+          <Label>{{ $t("profile.name") }}</Label>
+          <Input v-model="form.name" class="max-w-md" />
         </div>
         <div class="space-y-2">
-          <Label>{{ $t("auth.email") }}</Label>
-          <Input :model-value="auth.user?.email" disabled />
+          <Label>{{ $t("profile.about") }}</Label>
+          <Textarea v-model="form.about" :rows="4" :placeholder="$t('profile.aboutPlaceholder')" />
         </div>
-        <div class="flex flex-wrap gap-6 pt-1 text-sm">
-          <div>
-            <p class="text-xs text-muted-foreground">{{ $t("account.role") }}</p>
-            <Badge variant="secondary">{{ auth.user?.role }}</Badge>
-          </div>
-          <div v-if="org">
-            <p class="text-xs text-muted-foreground">{{ $t("account.organization") }}</p>
-            <p class="font-medium">{{ org.name }} <Badge :variant="org.status === 'active' ? 'success' : 'warning'">{{ org.status }}</Badge></p>
-          </div>
+        <div class="space-y-2">
+          <Label>{{ $t("profile.website") }}</Label>
+          <Input v-model="form.website" placeholder="https://example.com" class="max-w-md" />
         </div>
+        <p v-if="profErr" class="text-sm text-destructive">{{ profErr }}</p>
+        <p v-if="profOk" class="text-sm text-green-600">{{ $t("profile.saved") }}</p>
+        <Button :disabled="saveProfile.isPending.value || !isActive || form.name.length < 2" @click="saveProfile.mutate()">
+          <Spinner v-if="saveProfile.isPending.value" /> {{ $t("common.save") }}
+        </Button>
       </CardContent>
     </Card>
 
     <!-- Change password -->
     <Card>
-      <CardHeader><CardTitle>{{ $t("account.changePassword") }}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>{{ $t("account.changePassword") }}</CardTitle>
+        <CardDescription>{{ auth.user?.email }}</CardDescription>
+      </CardHeader>
       <CardContent>
         <form class="space-y-3" @submit.prevent="changePw.mutate()">
           <div class="space-y-2">

@@ -30,6 +30,12 @@ export const messages = {
       organizations: "Tashkilotlar",
       profile: "Profil",
     },
+    theme: {
+      label: "Mavzu",
+      system: "Tizim",
+      light: "Yorug'",
+      dark: "Qorong'i",
+    },
     account: {
       title: "Profil",
       info: "Hisob ma'lumotlari",
@@ -90,6 +96,9 @@ export const messages = {
       aiInstructions: "AI uchun qo'shimcha ko'rsatmalar (ixtiyoriy)",
       aiInstructionsHint:
         "Baholash uchun qat'iy qoidalar. Masalan: 'Faqat 3+ yil Laravel tajribasi bo'lganlarni yuqori baholang' yoki 'Diplom shart emas'.",
+      image: "Rasm (ixtiyoriy)",
+      imageHint: "Nomzodga vakansiya ma'lumoti bilan Telegram orqali yuboriladi. PNG, JPG, WEBP yoki GIF.",
+      removeImage: "Rasmni olib tashlash",
       noDescription: "Tavsif yo'q",
       applicantsCount: "{n} arizachi",
       empty: "Hali vakansiyalar yo'q. Birinchi lavozimni yarating.",
@@ -206,6 +215,8 @@ export const messages = {
     profile: {
       title: "Kompaniya profili",
       hint: "Nomzodlarga vakansiya bilan birga ko'rsatiladi (Telegram orqali).",
+      name: "Kompaniya nomi",
+      status: "Holat",
       about: "Kompaniya haqida",
       aboutPlaceholder: "Kompaniyangiz nima bilan shug'ullanadi…",
       website: "Veb-sayt",
@@ -320,6 +331,12 @@ export const messages = {
       organizations: "Организации",
       profile: "Профиль",
     },
+    theme: {
+      label: "Тема",
+      system: "Системная",
+      light: "Светлая",
+      dark: "Тёмная",
+    },
     account: {
       title: "Профиль",
       info: "Данные аккаунта",
@@ -380,6 +397,9 @@ export const messages = {
       aiInstructions: "Доп. инструкции для AI (необязательно)",
       aiInstructionsHint:
         "Строгие правила оценки. Например: «Высоко оценивай только с опытом Laravel 3+ года» или «Диплом не обязателен».",
+      image: "Изображение (необязательно)",
+      imageHint: "Отправляется кандидату вместе с вакансией в Telegram. PNG, JPG, WEBP или GIF.",
+      removeImage: "Удалить изображение",
       noDescription: "Нет описания",
       applicantsCount: "{n} кандидатов",
       empty: "Пока нет вакансий. Создайте первую должность.",
@@ -496,6 +516,8 @@ export const messages = {
     profile: {
       title: "Профиль компании",
       hint: "Показывается кандидатам вместе с вакансией (в Telegram).",
+      name: "Название компании",
+      status: "Статус",
       about: "О компании",
       aboutPlaceholder: "Чем занимается ваша компания…",
       website: "Веб-сайт",

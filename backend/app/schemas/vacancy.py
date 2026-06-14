@@ -33,5 +33,6 @@ class VacancyOut(VacancyBase):
     deep_link_param: str | None
     deep_link_url: str | None = None
     application_count: int = 0
+    has_image: bool = False
 
     model_config = {"from_attributes": True}

@@ -79,6 +79,8 @@ async def set_profile(
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ):
+    if payload.name is not None:
+        org.name = payload.name
     org.about = payload.about
     org.website = payload.website
     await db.commit()

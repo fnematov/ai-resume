@@ -26,7 +26,7 @@ from app.models import (
 )
 from app.services.activities import log_activity
 from app.services.extraction import ALLOWED_EXTENSIONS, guess_mime
-from app.services.storage import save_resume
+from app.services.storage import file_exists, read_file, save_resume
 from app.services.telegram.client import TelegramClient
 from app.services.telegram.i18n import (
     CHOOSE_LANGUAGE,
@@ -51,8 +51,8 @@ from app.services.telegram.state import (
     set_selected_vacancy,
 )
 
-async def _resolve_lang(db: AsyncSession, org_id: int, chat_id: int, tg_user: dict) -> str:
-    """Current candidate language: Redis first, then the persisted candidate, else default."""
+async def _known_lang(db: AsyncSession, org_id: int, chat_id: int, tg_user: dict) -> str | None:
+    """Previously chosen language: Redis first, then the persisted candidate. None if never set."""
     lang = await get_language(org_id, chat_id)
     if lang in SUPPORTED_LANGS:
         return lang
@@ -66,7 +66,12 @@ async def _resolve_lang(db: AsyncSession, org_id: int, chat_id: int, tg_user: di
     ).scalar_one_or_none()
     if cand and cand.language in SUPPORTED_LANGS:
         return cand.language
-    return DEFAULT_LANG
+    return None
+
+
+async def _resolve_lang(db: AsyncSession, org_id: int, chat_id: int, tg_user: dict) -> str:
+    """Current candidate language, falling back to the default when never chosen."""
+    return await _known_lang(db, org_id, chat_id, tg_user) or DEFAULT_LANG
 
 
 async def _open_vacancies(db: AsyncSession, org_id: int) -> list[Vacancy]:
@@ -99,7 +104,11 @@ def _vacancy_keyboard(vacancies: list[Vacancy]) -> dict:
 async def _prompt_for_vacancy(
     client: TelegramClient, chat_id: int, vacancy: Vacancy, org: Organization, lang: str
 ) -> None:
-    """Send the full vacancy details + company profile, then ask for the resume."""
+    """Send the full vacancy details + company profile, then ask for the resume.
+
+    When the vacancy has a banner image, everything goes out as a single Telegram
+    message: a photo with the text as its caption.
+    """
     e = html.escape
     lines = [f"<b>{e(vacancy.title)}</b>", f"🏢 {e(org.name)}"]
     meta = []
@@ -118,6 +127,37 @@ async def _prompt_for_vacancy(
     if org.website:
         lines.append(f"🔗 {e(org.website)}")
     lines += ["", t(lang, "welcome")]
+
+    # With an image, send photo + caption as one message. Telegram caps photo
+    # captions at 1024 chars, so fit whole lines (keeping HTML tags balanced) and
+    # always preserve the closing call-to-action line.
+    if vacancy.image_path and file_exists(vacancy.image_path):
+        try:
+            caption = "\n".join(lines)
+            if len(caption) > 1024:
+                cta = lines[-1]
+                budget = 1024 - len(cta) - 1
+                kept: list[str] = []
+                used = 0
+                for ln in lines[:-1]:
+                    if used + len(ln) + 1 <= budget:
+                        kept.append(ln)
+                        used += len(ln) + 1
+                        continue
+                    # The line overflows. Plain-text lines (no HTML tag) can be
+                    # truncated in place; tagged lines are dropped to keep markup valid.
+                    room = budget - used - 1
+                    if "<" not in ln and room > 12:
+                        kept.append(ln[: room - 1].rstrip() + "…")
+                    break
+                caption = "\n".join([*kept, cta])
+            await client.send_photo(
+                chat_id, read_file(vacancy.image_path), filename="vacancy", caption=caption
+            )
+            return
+        except Exception:
+            pass  # fall back to a plain text message below
+
     await client.send_message(chat_id, "\n".join(lines))
 
 
@@ -198,17 +238,10 @@ async def handle_update(
             if lang not in SUPPORTED_LANGS:
                 lang = DEFAULT_LANG
             await set_language(org.id, chat_id, lang)
-            cand = (
-                await db.execute(
-                    select(Candidate).where(
-                        Candidate.org_id == org.id,
-                        Candidate.telegram_user_id == cq_user.get("id"),
-                    )
-                )
-            ).scalar_one_or_none()
-            if cand:
-                cand.language = lang
-                await db.commit()
+            # Persist on the candidate (creating it if needed) so the choice
+            # survives Redis expiry and is reused for every future vacancy.
+            await _upsert_candidate(db, org.id, cq_user, lang)
+            await db.commit()
             param = await get_pending_start(org.id, chat_id) or ""
             await clear_pending_start(org.id, chat_id)
             await _start_flow(client, db, org, chat_id, lang, param)
@@ -269,10 +302,16 @@ async def handle_update(
             await client.send_message(chat_id, t(lang, "forget_none"))
         return
 
-    # --- /start [payload] : ask for language first, then continue ---
+    # --- /start [payload] : ask language only the first time, then remember it ---
     if text.startswith("/start"):
         parts = text.split(maxsplit=1)
         payload = parts[1].strip() if len(parts) > 1 else ""
+        known = await _known_lang(db, org.id, chat_id, tg_user)
+        if known:
+            # Refresh the Redis TTL and continue straight to the vacancy flow.
+            await set_language(org.id, chat_id, known)
+            await _start_flow(client, db, org, chat_id, known, payload)
+            return
         await set_pending_start(org.id, chat_id, payload)
         await client.send_message(chat_id, CHOOSE_LANGUAGE, reply_markup=language_keyboard())
         return

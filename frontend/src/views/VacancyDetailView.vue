@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
-import { Copy, LayoutGrid, Upload } from "lucide-vue-next"
-import { computed, ref } from "vue"
+import { Copy, ImagePlus, LayoutGrid, Upload, X } from "lucide-vue-next"
+import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import { apiError } from "@/api/client"
@@ -59,6 +59,43 @@ function onFile(e: Event) {
   }
 }
 
+// --- Vacancy banner image ---
+const imgInput = ref<HTMLInputElement | null>(null)
+const imageUrl = ref("")
+watch(
+  vacancy,
+  async (v) => {
+    if (imageUrl.value) {
+      URL.revokeObjectURL(imageUrl.value)
+      imageUrl.value = ""
+    }
+    if (v?.has_image) {
+      try {
+        imageUrl.value = URL.createObjectURL(await vacancyApi.image(v.id))
+      } catch {
+        imageUrl.value = ""
+      }
+    }
+  },
+  { immediate: true },
+)
+const setImage = useMutation({
+  mutationFn: (file: File) => vacancyApi.setImage(id.value, file),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ["vacancy", id] }),
+  onError: (e) => (uploadError.value = apiError(e)),
+})
+const removeImage = useMutation({
+  mutationFn: () => vacancyApi.removeImage(id.value),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ["vacancy", id] }),
+})
+function onImage(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (f) {
+    uploadError.value = ""
+    setImage.mutate(f)
+  }
+}
+
 const statusVariant: Record<ApplicationStatus, "success" | "warning" | "muted" | "destructive"> = {
   scored: "success",
   processing: "warning",
@@ -101,6 +138,30 @@ const statusVariant: Record<ApplicationStatus, "success" | "warning" | "muted" |
           <input ref="fileInput" type="file" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx" @change="onFile" />
           <Button variant="secondary" size="sm" :disabled="upload.isPending.value" @click="fileInput?.click()">
             <Spinner v-if="upload.isPending.value" /><Upload v-else class="h-4 w-4" /> Manual upload
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Vacancy banner image -->
+    <Card>
+      <CardContent class="p-4 flex flex-wrap items-center gap-4">
+        <img v-if="imageUrl" :src="imageUrl" alt="" class="h-24 w-40 rounded-md border object-cover" />
+        <div v-else class="grid h-24 w-40 place-items-center rounded-md border border-dashed text-muted-foreground">
+          <ImagePlus class="h-6 w-6" />
+        </div>
+        <div class="flex-1 min-w-[200px] space-y-1">
+          <p class="text-sm font-medium">{{ $t("vacancy.image") }}</p>
+          <p class="text-xs text-muted-foreground">{{ $t("vacancy.imageHint") }}</p>
+        </div>
+        <input ref="imgInput" type="file" class="hidden" accept="image/png,image/jpeg,image/webp,image/gif" @change="onImage" />
+        <div class="flex gap-2">
+          <Button variant="secondary" size="sm" :disabled="setImage.isPending.value" @click="imgInput?.click()">
+            <Spinner v-if="setImage.isPending.value" /><Upload v-else class="h-4 w-4" />
+            {{ vacancy?.has_image ? $t("common.save") : $t("common.create") }}
+          </Button>
+          <Button v-if="vacancy?.has_image" variant="ghost" size="sm" :disabled="removeImage.isPending.value" @click="removeImage.mutate()">
+            <X class="h-4 w-4" /> {{ $t("vacancy.removeImage") }}
           </Button>
         </div>
       </CardContent>

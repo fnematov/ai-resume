@@ -3,7 +3,6 @@ import {
   Building2,
   Briefcase,
   LayoutDashboard,
-  LogOut,
   MessageSquareText,
   Settings,
   ShieldCheck,
@@ -11,15 +10,15 @@ import {
   Zap,
 } from "lucide-vue-next"
 import { computed } from "vue"
-import { useI18n } from "vue-i18n"
-import { RouterView, useRouter } from "vue-router"
+import { RouterView, useRoute } from "vue-router"
 
-import { LOCALES, setLocale } from "@/i18n"
+import LanguageSelector from "@/components/LanguageSelector.vue"
+import ThemeSelector from "@/components/ThemeSelector.vue"
+import UserMenu from "@/components/UserMenu.vue"
 import { useAuthStore } from "@/stores/auth"
 
 const auth = useAuthStore()
-const router = useRouter()
-const { locale } = useI18n()
+const route = useRoute()
 
 const orgNav = [
   { name: "dashboard", label: "nav.dashboard", icon: LayoutDashboard },
@@ -36,20 +35,32 @@ const adminNav = [
 ]
 const nav = computed(() => (auth.isSuperadmin ? adminNav : orgNav))
 
-function logout() {
-  auth.logout()
-  router.push({ name: "login" })
+// Map every route to the i18n key shown in the top header. Detail pages fall
+// back to their parent section so the header always names the current area.
+const TITLE_KEYS: Record<string, string> = {
+  dashboard: "nav.dashboard",
+  vacancies: "nav.vacancies",
+  vacancy: "nav.vacancies",
+  pipeline: "nav.vacancies",
+  application: "nav.vacancies",
+  templates: "nav.templates",
+  automation: "nav.automation",
+  settings: "nav.settings",
+  profile: "nav.profile",
+  "admin-platform": "nav.platform",
+  "admin-orgs": "nav.organizations",
 }
+const titleKey = computed(() => TITLE_KEYS[String(route.name)] ?? "")
 </script>
 
 <template>
   <div class="flex h-screen overflow-hidden bg-muted/30">
     <aside class="flex w-60 shrink-0 flex-col border-r bg-card">
       <div class="flex h-14 shrink-0 items-center gap-2 border-b px-5">
-        <div class="h-7 w-7 rounded-md bg-primary text-primary-foreground grid place-items-center text-sm font-bold">AR</div>
+        <div class="grid h-7 w-7 place-items-center rounded-md bg-primary text-sm font-bold text-primary-foreground">AR</div>
         <span class="font-semibold">AI Resume</span>
       </div>
-      <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav class="flex-1 space-y-1 overflow-y-auto p-3">
         <RouterLink
           v-for="item in nav"
           :key="item.name"
@@ -61,40 +72,24 @@ function logout() {
           {{ $t(item.label) }}
         </RouterLink>
       </nav>
-      <div class="shrink-0 border-t p-3">
-        <!-- Language switcher -->
-        <div class="mb-2 flex gap-1 px-1">
-          <button
-            v-for="l in LOCALES"
-            :key="l.code"
-            class="flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
-            :class="locale === l.code ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'"
-            @click="setLocale(l.code)"
-          >
-            {{ l.label }}
-          </button>
-        </div>
-        <RouterLink
-          :to="{ name: 'profile' }"
-          class="mb-1 block rounded-md px-3 py-2 hover:bg-accent"
-          active-class="bg-accent"
-        >
-          <p class="truncate text-sm font-medium">{{ auth.user?.full_name }}</p>
-          <p class="truncate text-xs text-muted-foreground">{{ auth.user?.email }}</p>
-        </RouterLink>
-        <button
-          class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          @click="logout"
-        >
-          <LogOut class="h-4 w-4" /> {{ $t("common.signOut") }}
-        </button>
-      </div>
     </aside>
 
-    <main class="flex-1 overflow-auto">
-      <div class="mx-auto max-w-6xl p-8">
-        <RouterView />
-      </div>
-    </main>
+    <div class="flex min-w-0 flex-1 flex-col">
+      <!-- Top header -->
+      <header class="flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-card px-6">
+        <h1 class="truncate text-lg font-semibold">{{ titleKey ? $t(titleKey) : "" }}</h1>
+        <div class="flex items-center gap-2">
+          <ThemeSelector />
+          <LanguageSelector />
+          <UserMenu />
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-auto">
+        <div class="mx-auto max-w-6xl p-8">
+          <RouterView />
+        </div>
+      </main>
+    </div>
   </div>
 </template>

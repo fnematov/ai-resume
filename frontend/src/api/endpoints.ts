@@ -71,8 +71,8 @@ export const orgApi = {
     })
     return data
   },
-  async setProfile(about: string | null, website: string | null) {
-    const { data } = await api.put<Organization>("/organizations/me/profile", { about, website })
+  async setProfile(payload: { name?: string; about: string | null; website: string | null }) {
+    const { data } = await api.put<Organization>("/organizations/me/profile", payload)
     return data
   },
   async list(status?: OrgStatus) {
@@ -107,6 +107,20 @@ export const vacancyApi = {
   },
   async remove(id: number) {
     await api.delete(`/vacancies/${id}`)
+  },
+  async setImage(id: number, file: File) {
+    const form = new FormData()
+    form.append("file", file)
+    const { data } = await api.put<Vacancy>(`/vacancies/${id}/image`, form)
+    return data
+  },
+  async removeImage(id: number) {
+    const { data } = await api.delete<Vacancy>(`/vacancies/${id}/image`)
+    return data
+  },
+  async image(id: number) {
+    const { data } = await api.get(`/vacancies/${id}/image`, { responseType: "blob" })
+    return data as Blob
   },
 }
 
