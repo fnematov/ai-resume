@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
-import { Plus, Sparkles, X } from "lucide-vue-next"
+import { ImagePlus, Plus, Sparkles, Upload, X } from "lucide-vue-next"
 import { computed, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
@@ -42,6 +42,7 @@ const form = ref(emptyForm())
 // Optional banner image (uploaded after the vacancy is created).
 const imageFile = ref<File | null>(null)
 const imagePreview = ref("")
+const imgInput = ref<HTMLInputElement | null>(null)
 function onImagePick(e: Event) {
   const f = (e.target as HTMLInputElement).files?.[0] ?? null
   imageFile.value = f
@@ -52,6 +53,7 @@ function clearImage() {
   imageFile.value = null
   if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
   imagePreview.value = ""
+  if (imgInput.value) imgInput.value.value = ""
 }
 
 const create = useMutation({
@@ -184,22 +186,24 @@ onMounted(() => {
             <Textarea v-model="form.ai_instructions" :rows="3" />
             <p class="text-xs text-muted-foreground">{{ $t("vacancy.aiInstructionsHint") }}</p>
           </div>
-          <div class="space-y-2">
-            <Label>{{ $t("vacancy.image") }}</Label>
-            <div v-if="imagePreview" class="flex items-start gap-3">
-              <img :src="imagePreview" alt="" class="h-24 w-40 rounded-md border object-cover" />
-              <Button type="button" variant="ghost" size="sm" @click="clearImage">
+          <div class="flex flex-wrap items-center gap-4 rounded-md border p-4">
+            <img v-if="imagePreview" :src="imagePreview" alt="" class="h-24 w-40 rounded-md border object-cover" />
+            <div v-else class="grid h-24 w-40 place-items-center rounded-md border border-dashed text-muted-foreground">
+              <ImagePlus class="h-6 w-6" />
+            </div>
+            <div class="flex-1 min-w-[200px] space-y-1">
+              <p class="text-sm font-medium">{{ $t("vacancy.image") }}</p>
+              <p class="text-xs text-muted-foreground">{{ $t("vacancy.imageHint") }}</p>
+            </div>
+            <input ref="imgInput" type="file" class="hidden" accept="image/png,image/jpeg,image/webp,image/gif" @change="onImagePick" />
+            <div class="flex gap-2">
+              <Button type="button" variant="secondary" size="sm" @click="imgInput?.click()">
+                <Upload class="h-4 w-4" /> {{ imagePreview ? $t("common.edit") : $t("common.add") }}
+              </Button>
+              <Button v-if="imagePreview" type="button" variant="ghost" size="sm" @click="clearImage">
                 <X class="h-4 w-4" /> {{ $t("vacancy.removeImage") }}
               </Button>
             </div>
-            <input
-              v-else
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              class="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-input file:bg-transparent file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent"
-              @change="onImagePick"
-            />
-            <p class="text-xs text-muted-foreground">{{ $t("vacancy.imageHint") }}</p>
           </div>
           <div class="space-y-2">
             <Label>{{ $t("common.status") }}</Label>
