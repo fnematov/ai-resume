@@ -40,6 +40,7 @@ const nav = computed(() => (auth.isSuperadmin ? adminNav : orgNav))
 const TITLE_KEYS: Record<string, string> = {
   dashboard: "nav.dashboard",
   vacancies: "nav.vacancies",
+  "vacancy-ai": "nav.vacancies",
   vacancy: "nav.vacancies",
   pipeline: "nav.vacancies",
   application: "nav.vacancies",

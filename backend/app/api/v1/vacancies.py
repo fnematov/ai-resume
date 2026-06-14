@@ -77,7 +77,10 @@ async def ai_draft_vacancy(
     provider = get_provider(org.ai_provider, api_key, org.ai_model)
     try:
         result = await provider.build_vacancy(
-            [m.model_dump() for m in payload.messages], payload.language, org.name
+            [m.model_dump() for m in payload.messages],
+            payload.language,
+            org.name,
+            payload.current.model_dump() if payload.current else None,
         )
     except Exception as exc:  # surface provider errors as a clean 502
         raise HTTPException(

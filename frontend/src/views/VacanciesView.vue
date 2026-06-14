@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { Plus, Sparkles, X } from "lucide-vue-next"
-import { ref } from "vue"
+import { computed, onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 
 import { apiError } from "@/api/client"
 import { vacancyApi } from "@/api/endpoints"
@@ -9,11 +10,14 @@ import type { Vacancy, VacancyDraft, VacancyStatus } from "@/api/types"
 import AiVacancyChat from "@/components/AiVacancyChat.vue"
 import PendingBanner from "@/components/PendingBanner.vue"
 import { useOrg } from "@/composables/useOrg"
+import { useVacancyDraftStore } from "@/stores/vacancyDraft"
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Spinner, Textarea,
 } from "@/components/ui"
 
 const qc = useQueryClient()
+const router = useRouter()
+const draftStore = useVacancyDraftStore()
 const { isActive } = useOrg()
 const { data: vacancies, isLoading } = useQuery({
   queryKey: ["vacancies"],
@@ -22,7 +26,7 @@ const { data: vacancies, isLoading } = useQuery({
 })
 
 const showForm = ref(false)
-const showAiChat = ref(false)
+const showFormAi = ref(false)
 const error = ref("")
 const emptyForm = () => ({
   title: "",
@@ -74,21 +78,39 @@ function badge(v: Vacancy) {
   return statusVariant[v.status]
 }
 
-// AI builder finished: prefill the create form with the draft for review + save.
+// Current form values handed to the in-form AI helper so it doesn't re-ask.
+const currentDraft = computed<VacancyDraft>(() => ({
+  title: form.value.title,
+  description: form.value.description,
+  requirements: form.value.requirements,
+  employment_type: form.value.employment_type,
+  location: form.value.location,
+  ai_instructions: form.value.ai_instructions,
+}))
+
+// Dedicated AI builder page handoff: prefill a fresh create form.
 function applyDraft(d: VacancyDraft) {
-  form.value = {
-    title: d.title,
-    description: d.description,
-    requirements: d.requirements,
-    employment_type: d.employment_type,
-    location: d.location,
-    ai_instructions: d.ai_instructions,
-    status: "draft",
-  }
-  showAiChat.value = false
+  form.value = { ...d, status: "draft" }
   showForm.value = true
   clearImage()
 }
+
+// In-form AI helper: merge the AI draft into the open form (keep empty values intact).
+function applyFormDraft(d: VacancyDraft) {
+  form.value.title = d.title || form.value.title
+  form.value.description = d.description || form.value.description
+  form.value.requirements = d.requirements || form.value.requirements
+  form.value.employment_type = d.employment_type || form.value.employment_type
+  form.value.location = d.location || form.value.location
+  form.value.ai_instructions = d.ai_instructions || form.value.ai_instructions
+  showFormAi.value = false
+}
+
+// A draft produced on the dedicated AI page lands here.
+onMounted(() => {
+  const d = draftStore.take()
+  if (d) applyDraft(d)
+})
 </script>
 
 <template>
@@ -98,7 +120,7 @@ function applyDraft(d: VacancyDraft) {
         <p class="text-muted-foreground">{{ $t("vacancy.subtitle") }}</p>
       </div>
       <div class="flex gap-2">
-        <Button :disabled="!isActive" @click="showAiChat = true">
+        <Button :disabled="!isActive" @click="router.push({ name: 'vacancy-ai' })">
           <Sparkles class="h-4 w-4" /> {{ $t("aiVacancy.button") }}
         </Button>
         <Button variant="outline" :disabled="!isActive" @click="showForm = !showForm">
@@ -107,12 +129,32 @@ function applyDraft(d: VacancyDraft) {
       </div>
     </div>
 
-    <AiVacancyChat v-if="showAiChat" @close="showAiChat = false" @apply="applyDraft" />
-
     <PendingBanner />
 
+    <!-- In-form AI helper: fills/refines the open form, seeded with current values -->
+    <div
+      v-if="showFormAi"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      @click.self="showFormAi = false"
+    >
+      <div class="h-[80vh] w-full max-w-xl overflow-hidden rounded-lg border bg-card shadow-xl">
+        <AiVacancyChat
+          storage-key="ar_ai_vacancy_form"
+          :current="currentDraft"
+          show-close
+          @close="showFormAi = false"
+          @apply="applyFormDraft"
+        />
+      </div>
+    </div>
+
     <Card v-if="showForm">
-      <CardHeader><CardTitle>New vacancy</CardTitle></CardHeader>
+      <CardHeader class="flex flex-row items-center justify-between space-y-0">
+        <CardTitle>{{ $t("vacancy.new") }}</CardTitle>
+        <Button type="button" variant="outline" size="sm" @click="showFormAi = true">
+          <Sparkles class="h-4 w-4" /> {{ $t("aiVacancy.fillButton") }}
+        </Button>
+      </CardHeader>
       <CardContent>
         <form class="space-y-4" @submit.prevent="create.mutate()">
           <div class="grid gap-4 sm:grid-cols-2">

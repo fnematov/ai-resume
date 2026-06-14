@@ -4,6 +4,7 @@ import type {
   Activity,
   AiChatMessage,
   AiDraftTurn,
+  VacancyDraft,
   AutomationRule,
   ApplicationDetail,
   ApplicationListItem,
@@ -124,8 +125,8 @@ export const vacancyApi = {
     const { data } = await api.get(`/vacancies/${id}/image`, { responseType: "blob" })
     return data as Blob
   },
-  async aiDraft(messages: AiChatMessage[], language: string) {
-    const { data } = await api.post<AiDraftTurn>("/vacancies/ai-draft", { messages, language })
+  async aiDraft(messages: AiChatMessage[], language: string, current?: VacancyDraft) {
+    const { data } = await api.post<AiDraftTurn>("/vacancies/ai-draft", { messages, language, current })
     return data
   },
 }

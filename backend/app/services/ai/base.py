@@ -174,9 +174,25 @@ VACANCY_DRAFT_TURN_SCHEMA: dict = {
 }
 
 
-def build_vacancy_system_prompt(language: str | None = None, company_name: str | None = None) -> str:
+def build_vacancy_system_prompt(
+    language: str | None = None,
+    company_name: str | None = None,
+    current: dict | None = None,
+) -> str:
     name = LANGUAGE_NAMES.get(language or "en") or "English"
     company = f" for {company_name}" if company_name else ""
+    prefilled = ""
+    if current:
+        filled = {k: v for k, v in current.items() if isinstance(v, str) and v.strip()}
+        if filled:
+            lines = "\n".join(f"- {k}: {v}" for k, v in filled.items())
+            prefilled = (
+                "\n\nThe recruiter has ALREADY filled these vacancy fields in the form:\n"
+                f"{lines}\n"
+                "Treat these as given — do NOT ask about them again. Keep them in the draft, but "
+                "you may refine/improve their wording and fill the remaining empty fields. Echo "
+                "every field back in `draft` (the filled ones plus what you add).\n"
+            )
     return (
         "You are an expert recruiter who creates a complete, professional job vacancy"
         f"{company} from minimal input, through a very short chat.\n\n"
@@ -215,6 +231,7 @@ def build_vacancy_system_prompt(language: str | None = None, company_name: str |
         "names) that were not provided.\n\n"
         f"IMPORTANT: Write `message`, `quick_replies` and all draft text in {name}. Keep "
         "technology names and proper nouns in their original form (PHP, Laravel, AWS, React)."
+        + prefilled
     )
 
 
@@ -298,13 +315,14 @@ class AIProvider(ABC):
         messages: list[dict],
         language: str | None = None,
         company_name: str | None = None,
+        current: dict | None = None,
     ) -> dict:
         """One turn of the conversational vacancy builder. Returns a VACANCY_DRAFT_TURN dict."""
         convo = [m for m in messages if m.get("role") in ("user", "assistant") and m.get("content")]
         if not any(m["role"] == "user" for m in convo):
             convo = [{"role": "user", "content": "Help me create a new job vacancy."}, *convo]
         return await self._complete_structured(
-            build_vacancy_system_prompt(language, company_name),
+            build_vacancy_system_prompt(language, company_name, current),
             convo,
             VACANCY_DRAFT_TURN_SCHEMA,
             "vacancy_draft",

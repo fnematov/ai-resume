@@ -38,10 +38,15 @@ export const messages = {
     },
     aiVacancy: {
       button: "AI bilan yaratish",
+      fillButton: "AI bilan to'ldirish",
       title: "AI bilan vakansiya yaratish",
+      intro:
+        "Salom! Vakansiya yaratishda yordam beraman. Lavozim nomi, daraja (junior/middle/senior) va joylashuvni yozing — qolganini o'zim to'ldiraman.\n\nMasalan: «Senior PHP backend dasturchi, Toshkent, remote». Qancha ko'p ma'lumot bersangiz, draft shuncha aniq bo'ladi.",
+      clear: "Tozalash",
       thinking: "Yozyapti…",
       placeholder: "Javobingizni yozing…",
-      draftReady: "Vakansiya loyihasi tayyor. Formani to'ldirib, ko'rib chiqing va saqlang.",
+      draftReady: "Vakansiya loyihasi tayyor. Tasdiqlasangiz, forma to'ldiriladi.",
+      confirm: "Tasdiqlash",
       fillForm: "Formani to'ldirish",
     },
     account: {
@@ -347,10 +352,15 @@ export const messages = {
     },
     aiVacancy: {
       button: "Создать с AI",
+      fillButton: "Заполнить с AI",
       title: "Создание вакансии с AI",
+      intro:
+        "Здравствуйте! Помогу создать вакансию. Напишите название должности, уровень (junior/middle/senior) и локацию — остальное заполню сам.\n\nНапример: «Senior PHP backend разработчик, Ташкент, удалённо». Чем больше деталей, тем точнее черновик.",
+      clear: "Очистить",
       thinking: "Печатает…",
       placeholder: "Введите ответ…",
-      draftReady: "Черновик вакансии готов. Заполните форму, проверьте и сохраните.",
+      draftReady: "Черновик вакансии готов. Подтвердите — и форма заполнится.",
+      confirm: "Подтвердить",
       fillForm: "Заполнить форму",
     },
     account: {

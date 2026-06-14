@@ -14,6 +14,7 @@ const router = createRouter({
         { path: "", redirect: "/dashboard" },
         { path: "dashboard", name: "dashboard", component: () => import("@/views/DashboardView.vue") },
         { path: "vacancies", name: "vacancies", component: () => import("@/views/VacanciesView.vue") },
+        { path: "vacancies/ai", name: "vacancy-ai", component: () => import("@/views/AiVacancyView.vue") },
         { path: "vacancies/:id", name: "vacancy", component: () => import("@/views/VacancyDetailView.vue") },
         { path: "vacancies/:id/pipeline", name: "pipeline", component: () => import("@/views/PipelineView.vue") },
         { path: "applications/:id", name: "application", component: () => import("@/views/ApplicationDetailView.vue") },

@@ -35,11 +35,6 @@ class AiChatMessage(BaseModel):
     content: str = Field(max_length=8000)
 
 
-class AiDraftRequest(BaseModel):
-    messages: list[AiChatMessage] = Field(default_factory=list, max_length=60)
-    language: str | None = None
-
-
 class VacancyDraft(BaseModel):
     title: str = ""
     description: str = ""
@@ -47,6 +42,13 @@ class VacancyDraft(BaseModel):
     employment_type: str = ""
     location: str = ""
     ai_instructions: str = ""
+
+
+class AiDraftRequest(BaseModel):
+    messages: list[AiChatMessage] = Field(default_factory=list, max_length=60)
+    language: str | None = None
+    # Fields the recruiter has already filled in the form (so the AI doesn't re-ask).
+    current: VacancyDraft | None = None
 
 
 class AiDraftTurn(BaseModel):
