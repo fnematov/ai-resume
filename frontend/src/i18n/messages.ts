@@ -36,6 +36,14 @@ export const messages = {
       light: "Yorug'",
       dark: "Qorong'i",
     },
+    aiVacancy: {
+      button: "AI bilan yaratish",
+      title: "AI bilan vakansiya yaratish",
+      thinking: "Yozyapti…",
+      placeholder: "Javobingizni yozing…",
+      draftReady: "Vakansiya loyihasi tayyor. Formani to'ldirib, ko'rib chiqing va saqlang.",
+      fillForm: "Formani to'ldirish",
+    },
     account: {
       title: "Profil",
       info: "Hisob ma'lumotlari",
@@ -336,6 +344,14 @@ export const messages = {
       system: "Системная",
       light: "Светлая",
       dark: "Тёмная",
+    },
+    aiVacancy: {
+      button: "Создать с AI",
+      title: "Создание вакансии с AI",
+      thinking: "Печатает…",
+      placeholder: "Введите ответ…",
+      draftReady: "Черновик вакансии готов. Заполните форму, проверьте и сохраните.",
+      fillForm: "Заполнить форму",
     },
     account: {
       title: "Профиль",

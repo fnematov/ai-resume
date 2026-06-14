@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
-import { Plus, X } from "lucide-vue-next"
+import { Plus, Sparkles, X } from "lucide-vue-next"
 import { ref } from "vue"
 
 import { apiError } from "@/api/client"
 import { vacancyApi } from "@/api/endpoints"
-import type { Vacancy, VacancyStatus } from "@/api/types"
+import type { Vacancy, VacancyDraft, VacancyStatus } from "@/api/types"
+import AiVacancyChat from "@/components/AiVacancyChat.vue"
 import PendingBanner from "@/components/PendingBanner.vue"
 import { useOrg } from "@/composables/useOrg"
 import {
@@ -21,6 +22,7 @@ const { data: vacancies, isLoading } = useQuery({
 })
 
 const showForm = ref(false)
+const showAiChat = ref(false)
 const error = ref("")
 const emptyForm = () => ({
   title: "",
@@ -71,6 +73,22 @@ const statusVariant: Record<VacancyStatus, "success" | "muted" | "secondary"> = 
 function badge(v: Vacancy) {
   return statusVariant[v.status]
 }
+
+// AI builder finished: prefill the create form with the draft for review + save.
+function applyDraft(d: VacancyDraft) {
+  form.value = {
+    title: d.title,
+    description: d.description,
+    requirements: d.requirements,
+    employment_type: d.employment_type,
+    location: d.location,
+    ai_instructions: d.ai_instructions,
+    status: "draft",
+  }
+  showAiChat.value = false
+  showForm.value = true
+  clearImage()
+}
 </script>
 
 <template>
@@ -79,8 +97,15 @@ function badge(v: Vacancy) {
       <div>
         <p class="text-muted-foreground">{{ $t("vacancy.subtitle") }}</p>
       </div>
-      <Button :disabled="!isActive" @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
+      <div class="flex gap-2">
+        <Button variant="outline" :disabled="!isActive" @click="showAiChat = true">
+          <Sparkles class="h-4 w-4" /> {{ $t("aiVacancy.button") }}
+        </Button>
+        <Button :disabled="!isActive" @click="showForm = !showForm"><Plus class="h-4 w-4" /> {{ $t("vacancy.new") }}</Button>
+      </div>
     </div>
+
+    <AiVacancyChat v-if="showAiChat" @close="showAiChat = false" @apply="applyDraft" />
 
     <PendingBanner />
 

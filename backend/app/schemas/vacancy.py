@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from app.models.enums import VacancyStatus
@@ -24,6 +26,34 @@ class VacancyUpdate(BaseModel):
     location: str | None = None
     ai_instructions: str | None = None
     status: VacancyStatus | None = None
+
+
+# --- Conversational AI vacancy builder ---
+
+class AiChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(max_length=8000)
+
+
+class AiDraftRequest(BaseModel):
+    messages: list[AiChatMessage] = Field(default_factory=list, max_length=60)
+    language: str | None = None
+
+
+class VacancyDraft(BaseModel):
+    title: str = ""
+    description: str = ""
+    requirements: str = ""
+    employment_type: str = ""
+    location: str = ""
+    ai_instructions: str = ""
+
+
+class AiDraftTurn(BaseModel):
+    message: str = ""
+    quick_replies: list[str] = Field(default_factory=list)
+    complete: bool = False
+    draft: VacancyDraft = Field(default_factory=VacancyDraft)
 
 
 class VacancyOut(VacancyBase):

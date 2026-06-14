@@ -6,9 +6,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.deps import get_current_org, get_org_user
+from app.core.security import decrypt_secret
 from app.core.utils import deep_link_token
 from app.models import Application, Organization, User, Vacancy, VacancyStatus
-from app.schemas.vacancy import VacancyCreate, VacancyOut, VacancyUpdate
+from app.schemas.vacancy import (
+    AiDraftRequest,
+    AiDraftTurn,
+    VacancyCreate,
+    VacancyDraft,
+    VacancyOut,
+    VacancyUpdate,
+)
+from app.services.ai import get_provider
 from app.services.storage import delete_file, file_exists, read_file, save_image
 
 router = APIRouter()
@@ -50,6 +59,43 @@ async def list_vacancies(
         stmt = stmt.where(Vacancy.status == status_filter)
     rows = (await db.execute(stmt)).scalars().all()
     return [await _to_out(v, org, db) for v in rows]
+
+
+@router.post("/ai-draft", response_model=AiDraftTurn)
+async def ai_draft_vacancy(
+    payload: AiDraftRequest,
+    user: User = Depends(get_org_user),
+    org: Organization = Depends(get_current_org),
+):
+    """One turn of the conversational AI vacancy builder."""
+    if not org.ai_provider or not org.ai_api_key_enc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Configure an AI provider in Settings before using AI vacancy creation.",
+        )
+    api_key = decrypt_secret(org.ai_api_key_enc)
+    provider = get_provider(org.ai_provider, api_key, org.ai_model)
+    try:
+        result = await provider.build_vacancy(
+            [m.model_dump() for m in payload.messages], payload.language, org.name
+        )
+    except Exception as exc:  # surface provider errors as a clean 502
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail=f"AI request failed: {exc}"
+        )
+    raw = result.get("draft") or {}
+    draft = VacancyDraft(
+        **{
+            field: str(raw.get(field) or "")
+            for field in ("title", "description", "requirements", "employment_type", "location", "ai_instructions")
+        }
+    )
+    return AiDraftTurn(
+        message=str(result.get("message") or ""),
+        quick_replies=[str(x) for x in (result.get("quick_replies") or [])][:6],
+        complete=bool(result.get("complete")),
+        draft=draft,
+    )
 
 
 @router.post("", response_model=VacancyOut, status_code=status.HTTP_201_CREATED)

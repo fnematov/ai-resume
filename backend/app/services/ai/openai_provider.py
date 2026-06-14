@@ -67,3 +67,26 @@ class OpenAIProvider(AIProvider):
 
         raw = response.choices[0].message.content or "{}"
         return ScoreResult.from_payload(json.loads(raw))
+
+    async def _complete_structured(
+        self, system_prompt: str, messages: list[dict], schema: dict, schema_name: str
+    ) -> dict:
+        client = AsyncOpenAI(api_key=self.api_key)
+        try:
+            response = await client.chat.completions.create(
+                model=self.model,
+                max_completion_tokens=4000,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    *[{"role": m["role"], "content": m["content"]} for m in messages],
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {"name": schema_name, "strict": True, "schema": schema},
+                },
+            )
+        finally:
+            await client.close()
+
+        raw = response.choices[0].message.content or "{}"
+        return json.loads(raw)

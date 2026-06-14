@@ -168,6 +168,27 @@ export interface Vacancy {
   has_image: boolean
 }
 
+export interface VacancyDraft {
+  title: string
+  description: string
+  requirements: string
+  employment_type: string
+  location: string
+  ai_instructions: string
+}
+
+export interface AiChatMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
+export interface AiDraftTurn {
+  message: string
+  quick_replies: string[]
+  complete: boolean
+  draft: VacancyDraft
+}
+
 export interface Candidate {
   id: number
   telegram_username: string | null

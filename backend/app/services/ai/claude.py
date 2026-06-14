@@ -69,3 +69,30 @@ class ClaudeProvider(AIProvider):
             if getattr(block, "type", None) == "tool_use" and block.name == _TOOL_NAME:
                 return ScoreResult.from_payload(block.input)
         raise RuntimeError("Claude did not return a structured assessment")
+
+    async def _complete_structured(
+        self, system_prompt: str, messages: list[dict], schema: dict, schema_name: str
+    ) -> dict:
+        client = AsyncAnthropic(api_key=self.api_key)
+        try:
+            response = await client.messages.create(
+                model=self.model,
+                max_tokens=2000,
+                system=system_prompt,
+                tools=[
+                    {
+                        "name": schema_name,
+                        "description": "Return the structured result.",
+                        "input_schema": schema,
+                    }
+                ],
+                tool_choice={"type": "tool", "name": schema_name},
+                messages=[{"role": m["role"], "content": m["content"]} for m in messages],
+            )
+        finally:
+            await client.close()
+
+        for block in response.content:
+            if getattr(block, "type", None) == "tool_use" and block.name == schema_name:
+                return dict(block.input)
+        raise RuntimeError("Claude did not return structured output")

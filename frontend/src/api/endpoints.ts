@@ -2,6 +2,8 @@ import { api } from "./client"
 import type {
   ActionPayload,
   Activity,
+  AiChatMessage,
+  AiDraftTurn,
   AutomationRule,
   ApplicationDetail,
   ApplicationListItem,
@@ -121,6 +123,10 @@ export const vacancyApi = {
   async image(id: number) {
     const { data } = await api.get(`/vacancies/${id}/image`, { responseType: "blob" })
     return data as Blob
+  },
+  async aiDraft(messages: AiChatMessage[], language: string) {
+    const { data } = await api.post<AiDraftTurn>("/vacancies/ai-draft", { messages, language })
+    return data
   },
 }
 

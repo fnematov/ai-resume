@@ -126,6 +126,80 @@ def _language_instruction(language: str | None) -> str:
     )
 
 
+# --- Conversational vacancy builder -------------------------------------------------
+
+# One assistant turn: a reply, optional quick-reply chips, the running draft, and a flag
+# for when the draft is ready to hand back to the form. All fields are required so the
+# schema stays valid under OpenAI strict mode (empty strings / empty arrays mean "unset").
+VACANCY_DRAFT_TURN_SCHEMA: dict = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "message": {
+            "type": "string",
+            "description": "Your reply to the recruiter: one concise question or a short confirmation.",
+        },
+        "quick_replies": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "0-6 short tappable answer suggestions for your question. Empty when a free-text answer is expected.",
+        },
+        "complete": {
+            "type": "boolean",
+            "description": "True only once enough info is gathered and `draft` is fully filled and ready for review.",
+        },
+        "draft": {
+            "type": "object",
+            "additionalProperties": False,
+            "description": "The vacancy built so far. Use empty strings for fields not yet known.",
+            "properties": {
+                "title": {"type": "string"},
+                "description": {"type": "string"},
+                "requirements": {"type": "string"},
+                "employment_type": {"type": "string"},
+                "location": {"type": "string"},
+                "ai_instructions": {"type": "string"},
+            },
+            "required": [
+                "title",
+                "description",
+                "requirements",
+                "employment_type",
+                "location",
+                "ai_instructions",
+            ],
+        },
+    },
+    "required": ["message", "quick_replies", "complete", "draft"],
+}
+
+
+def build_vacancy_system_prompt(language: str | None = None, company_name: str | None = None) -> str:
+    name = LANGUAGE_NAMES.get(language or "en") or "English"
+    company = f" for {company_name}" if company_name else ""
+    return (
+        "You are a friendly recruiting assistant helping a company create a job vacancy"
+        f"{company} through a short chat.\n\n"
+        "How to behave:\n"
+        "- Ask ONE question at a time. Keep messages short and conversational.\n"
+        "- Start by asking for the role/position title if it is not known yet.\n"
+        "- Gather: title, a short description of the role, the key requirements / must-have "
+        "skills, employment type (e.g. full-time/part-time/contract), and location or work mode "
+        "(remote/hybrid/on-site). Optionally ask if there are strict screening rules for the AI.\n"
+        "- Whenever the answer is naturally a choice (seniority/experience level, employment "
+        "type, remote vs on-site, yes/no, etc.), provide `quick_replies` with 2-6 short options. "
+        "The recruiter can tap one or type their own answer. Use an empty array when a free-text "
+        "answer is expected (e.g. the job title or a detailed description).\n"
+        "- Build up `draft` incrementally every turn with what you know so far.\n"
+        "- Once you have title + description + requirements (employment type and location are "
+        "nice-to-have), write a clean, well-structured `description` and a clear bulleted "
+        "`requirements`, set `complete` to true, and in `message` tell the recruiter the draft is "
+        "ready to review and save. Do not invent facts the recruiter did not provide.\n\n"
+        f"IMPORTANT: Write `message`, `quick_replies` and all draft text in {name}. Keep "
+        "technology names and proper nouns in their original form (PHP, Laravel, AWS, React)."
+    )
+
+
 def build_system_prompt(job: JobSpec, language: str | None = None) -> str:
     parts = [
         "You are an expert technical recruiter screening candidates for a specific job.",
@@ -191,6 +265,32 @@ class AIProvider(ABC):
     async def _assess(self, system_prompt: str, document: ResumeDocument) -> ScoreResult:
         """Run the model with a system prompt + document, returning a structured ScoreResult."""
         raise NotImplementedError
+
+    async def _complete_structured(
+        self, system_prompt: str, messages: list[dict], schema: dict, schema_name: str
+    ) -> dict:
+        """Run a chat (system + role/content messages) and return JSON matching `schema`.
+
+        Optional capability — providers that support structured chat override this.
+        """
+        raise NotImplementedError("This provider does not support structured chat")
+
+    async def build_vacancy(
+        self,
+        messages: list[dict],
+        language: str | None = None,
+        company_name: str | None = None,
+    ) -> dict:
+        """One turn of the conversational vacancy builder. Returns a VACANCY_DRAFT_TURN dict."""
+        convo = [m for m in messages if m.get("role") in ("user", "assistant") and m.get("content")]
+        if not any(m["role"] == "user" for m in convo):
+            convo = [{"role": "user", "content": "Help me create a new job vacancy."}, *convo]
+        return await self._complete_structured(
+            build_vacancy_system_prompt(language, company_name),
+            convo,
+            VACANCY_DRAFT_TURN_SCHEMA,
+            "vacancy_draft",
+        )
 
     async def score_resume(
         self, job: JobSpec, document: ResumeDocument, language: str | None = None
