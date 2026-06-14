@@ -28,3 +28,8 @@ backend/storage/
 .DS_Store
 .idea/
 .vscode/
+
+# Runtime / build artifacts (must never be tracked — they block git pull on servers)
+backend/celerybeat-schedule
+celerybeat-schedule*
+*.tsbuildinfo
