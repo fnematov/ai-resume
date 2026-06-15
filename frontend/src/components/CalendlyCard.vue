@@ -89,7 +89,7 @@ const connect = useMutation({
         <Label>{{ $t("calendly.token") }}</Label>
         <div class="flex gap-2">
           <Input v-model="token" type="password" :placeholder="org?.calendly_configured ? '•••••••• (saved)' : 'eyJ…'" class="flex-1" />
-          <Button variant="secondary" :disabled="!token || loadTypes.isPending.value" @click="loadTypes.mutate()">
+          <Button :disabled="!token || loadTypes.isPending.value" @click="loadTypes.mutate()">
             <Spinner v-if="loadTypes.isPending.value" /> {{ $t("calendly.loadEvents") }}
           </Button>
         </div>
