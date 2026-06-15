@@ -91,8 +91,9 @@ const currentDraft = computed<VacancyDraft>(() => ({
 }))
 
 // Dedicated AI builder page handoff: prefill a fresh create form.
+// Default to "open" — the recruiter still reviews and clicks Create before it saves.
 function applyDraft(d: VacancyDraft) {
-  form.value = { ...d, status: "draft" }
+  form.value = { ...d, status: "open" }
   showForm.value = true
   clearImage()
 }

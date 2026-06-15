@@ -142,6 +142,18 @@ const saveEdit = useMutation({
   onError: (e) => (editError.value = apiError(e)),
 })
 
+// Quick status change from the header (draft ↔ open ↔ closed).
+const changeStatus = useMutation({
+  mutationFn: (status: VacancyStatus) => vacancyApi.update(id.value, { status }),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ["vacancy", id] })
+    qc.invalidateQueries({ queryKey: ["vacancies"] })
+  },
+})
+function onStatusChange(e: Event) {
+  changeStatus.mutate((e.target as HTMLSelectElement).value as VacancyStatus)
+}
+
 const vacancyStatusVariant: Record<VacancyStatus, "success" | "secondary" | "muted"> = {
   open: "success",
   draft: "secondary",
@@ -162,14 +174,30 @@ const statusVariant: Record<ApplicationStatus, "success" | "warning" | "muted" |
       <button class="text-sm text-muted-foreground hover:text-foreground" @click="router.push({ name: 'vacancies' })">
         ← Vacancies
       </button>
-      <div class="mt-2 flex items-start justify-between gap-4">
+      <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-bold tracking-tight">{{ vacancy?.title }}</h1>
-          <p class="text-muted-foreground">{{ vacancy?.application_count }} applicants · {{ vacancy?.status }}</p>
+          <p class="text-muted-foreground">{{ vacancy?.application_count }} applicants</p>
         </div>
-        <Button variant="outline" @click="router.push({ name: 'pipeline', params: { id } })">
-          <LayoutGrid class="h-4 w-4" /> Pipeline board
-        </Button>
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-2 text-sm text-muted-foreground">
+            {{ $t("common.status") }}
+            <select
+              v-if="vacancy"
+              :value="vacancy.status"
+              :disabled="changeStatus.isPending.value"
+              class="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
+              @change="onStatusChange"
+            >
+              <option value="open">{{ $t("vacancyStatus.open") }}</option>
+              <option value="draft">{{ $t("vacancyStatus.draft") }}</option>
+              <option value="closed">{{ $t("vacancyStatus.closed") }}</option>
+            </select>
+          </label>
+          <Button variant="outline" @click="router.push({ name: 'pipeline', params: { id } })">
+            <LayoutGrid class="h-4 w-4" /> Pipeline board
+          </Button>
+        </div>
       </div>
     </div>
 
