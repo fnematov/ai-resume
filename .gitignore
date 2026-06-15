@@ -33,3 +33,6 @@ backend/storage/
 backend/celerybeat-schedule
 celerybeat-schedule*
 *.tsbuildinfo
+
+# local secret scratch (never commit)
+.openai_key

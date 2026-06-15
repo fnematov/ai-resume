@@ -256,6 +256,17 @@ export const messages = {
       connectedMsg: "Calendly ulandi. Suhbat takliflari endi havolangizni o'z ichiga oladi.",
       connectedActive: "✓ Ulangan. Faol havola:",
       reconnectHint: "Qayta ulash yoki event type'ni o'zgartirish uchun pastga token joylang.",
+      guideTitle: "Token qanday olinadi? (1 daqiqa)",
+      openCalendly: "Calendly API sahifasini ochish",
+      step1: "Yuqoridagi tugmani bosib, Calendly hisobingizga kiring.",
+      step2: "“Personal Access Tokens” bo'limini toping — “Webhook subscriptions” EMAS.",
+      step3: "“Generate New Token” → tokenга nom bering (masalan, AI Resume) → Create.",
+      step4: "Token faqat bir marta ko'rsatiladi — uni darrov nusxalang.",
+      step5: "Tokenni pastdagi maydonga joylang va “Hodisalarni yuklash”ni bosing.",
+      noteScopes:
+        "Personal Access Token uchun scope yoki event tanlash SHART EMAS — u hisobingizga to'liq kirish beradi. Agar sizdan event/scope so'ralsa, siz Webhook bo'limidasiz; “Personal Access Tokens”ga o'ting.",
+      notePlan:
+        "Eslatma: Calendly API faqat pullik rejalarda (Standard va undan yuqori) ishlaydi. Bepul rejada token xatolik berishi mumkin.",
     },
     gdpr: {
       title: "Maxfiylik va ma'lumotlarni saqlash (GDPR)",
@@ -579,6 +590,17 @@ export const messages = {
       connectedMsg: "Calendly подключён. Приглашения теперь содержат вашу ссылку.",
       connectedActive: "✓ Подключено. Активная ссылка:",
       reconnectHint: "Вставьте токен ниже только для переподключения или смены типа события.",
+      guideTitle: "Как получить токен? (1 минута)",
+      openCalendly: "Открыть страницу API Calendly",
+      step1: "Нажмите кнопку выше и войдите в свой аккаунт Calendly.",
+      step2: "Найдите раздел «Personal Access Tokens» — НЕ «Webhook subscriptions».",
+      step3: "«Generate New Token» → задайте имя токена (например, AI Resume) → Create.",
+      step4: "Токен показывается только один раз — сразу скопируйте его.",
+      step5: "Вставьте токен в поле ниже и нажмите «Загрузить события».",
+      noteScopes:
+        "Для Personal Access Token НЕ нужно выбирать scope или события — он даёт полный доступ к аккаунту. Если просят выбрать событие/scope, вы в разделе Webhook; перейдите в «Personal Access Tokens».",
+      notePlan:
+        "Примечание: API Calendly работает только на платных тарифах (Standard и выше). На бесплатном тарифе токен может выдавать ошибку.",
     },
     gdpr: {
       title: "Приватность и хранение данных (GDPR)",
